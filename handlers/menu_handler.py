@@ -2,17 +2,36 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_order_history, get_user_info
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 # Эҷоди router
 menu_router = Router()
+
+# Функсия барои сохтани клавиатура бо тугмаҳо
+def get_custom_menu_keyboard():
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(
+        KeyboardButton("🍔 Категорияҳо"),
+        KeyboardButton("🛒 Сабад"),
+    )
+    keyboard.add(
+        KeyboardButton("📜 Фармоишот"),
+        KeyboardButton("ℹ️ Маълумотҳои шахсии ман"),
+    )
+    return keyboard
 
 # Функсияи "Меню" барои нишон додани клавиатураи категорияҳо
 @menu_router.message(Command(commands=["menu"]))
 async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
     await message.answer("Категорияҳоро интихоб кунед:", reply_markup=keyboard)
+    await message.answer(
+        "Лутфан тугмаҳоро интихоб кунед:",
+        reply_markup=get_custom_menu_keyboard()
+    )
+    await message.delete()
 
-
-
+    
 
 
 

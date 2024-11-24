@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_order_history, get_user_info
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.types import KeyboardButton
 
 # Эҷоди router
 menu_router = Router()

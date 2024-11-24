@@ -87,7 +87,7 @@ async def category_handler(callback_query: types.CallbackQuery):
 
 
 # Ҳангоми пахши тугмаи "Назад", ин функсия фаро гирифта мешавад
-@dp.callback_query_handler(lambda c: c.data == "exit_to_main_menu")
+@start_router.callback_query_handler(lambda c: c.data == "exit_to_main_menu")
 async def exit_to_main_menu_handler(callback_query: CallbackQuery):
     bot = callback_query.bot
     keyboard = await get_category_keyboard()

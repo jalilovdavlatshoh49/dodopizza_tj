@@ -57,7 +57,8 @@ async def get_cart_items(session: AsyncSession, user_id: int):
     return result
 
 
-async def show_cart(target, session: AsyncSession, user_id: int):
+async def show_cart(target, user_id: int):
+    session = SessionLocal()
     """
     Сабадро барои истифодабаранда нишон медиҳад.
 
@@ -112,7 +113,8 @@ async def show_cart(target, session: AsyncSession, user_id: int):
 
 
 # Helper function to get the user's cart
-async def get_cart_for_user(user_id, session: AsyncSession):
+async def get_cart_for_user(user_id):
+    session = SessionLocal()
     cart = await session.execute(select(Cart).filter(Cart.user_id == user_id, Cart.status == "pending"))
     cart = cart.scalar_one_or_none()
     if not cart:

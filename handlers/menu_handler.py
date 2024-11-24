@@ -27,11 +27,7 @@ def get_custom_menu_keyboard():
 async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
     await message.answer("Категорияҳоро интихоб кунед:", reply_markup=keyboard)
-    await message.answer(
-        "Лутфан тугмаҳоро интихоб кунед:",
-        reply_markup=get_custom_menu_keyboard()
-    )
-    await message.delete()
+    await message.answer_reply_markup(reply_markup=get_custom_menu_keyboard())
 
     
 

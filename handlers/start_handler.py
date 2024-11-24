@@ -72,7 +72,7 @@ async def category_handler(callback_query: types.CallbackQuery):
                 displayed_products += 1  # Теъдоди намоишшударо зиёд кун
                 
            
-               text = f"📋 Аз {total_products} намуди маҳсулот, {displayed_products} нишон дода шуд."
+                text = f"📋 Аз {total_products} намуди маҳсулот, {displayed_products} нишон дода шуд."
                 
                 exit_keyboard = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text=f"Назад", callback_data=f"exit_to_main_menu")]

@@ -4,6 +4,7 @@ from aiogram import Dispatcher
 from handlers.start_handler import start_router
 from handlers.sabad_handler import sabad_router
 from handlers.menu_handler import menu_router
+from handlers.reply_handler import reply_router
 from handlers.admin_folder.admin_accept import admin_accept
 from handlers.admin_folder.admin_menu_handler import admin_menu_router
 from handlers.admin_folder.admin_add_func import admin_add_func_router
@@ -28,6 +29,8 @@ async def main():
     dp.include_router(start_router)
     dp.include_router(menu_router)
     dp.include_router(admin_accept)
+    dp.include_router(reply_accept)
+    
     dp.include_router(admin_menu_router)
     dp.include_router(admin_add_func_router)
     dp.include_router(admin_product_router)

@@ -133,13 +133,17 @@ async def get_image_url(message: types.Message, state: FSMContext):
     session.add(new_product)
     await session.commit()
 
+    from aiogram.types import ParseMode
+
     # Ҷавоб ба истифодабаранда
     await message.answer(
-        f"Маҳсулот ба категорияи '{category}' бо маълумоти зайл илова шуд:\n"
-        f"Ном: {name}\n"
-        f"Тавсиф: {description}\n"
-        f"Нарх: {price}\n"
-        f"Тасвир: {image_url}"
-    )
+        f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
+    f"<b>Ном:</b> {name}\n"
+    f"<b>Тавсиф:</b> {description}\n"
+    f"<b>Нарх:</b> {price} сомонӣ\n\n"
+    f"<a href='{image_url}'>Тасвирро бинед</a>",
+    parse_mode=ParseMode.HTML
+)
+
     await state.clear()
 

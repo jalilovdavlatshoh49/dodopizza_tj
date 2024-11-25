@@ -26,16 +26,14 @@ def get_custom_menu_keyboard():
 @menu_router.message(Command(commands=["menu"]))
 async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
-    await message.bot.edit_message_reply_markup(
-        chat_id=message.chat.id,
-        message_id=message.message_id,
+    await message.answer(
+        text="\u200b",  # Матни ноаён
         reply_markup=keyboard
     )
 
 
-    await message.bot.edit_message_reply_markup(
-        chat_id=message.chat.id,
-        message_id=message.message_id,
+    await message.answer(
+        text="\u200b",  # Матни ноаён
         reply_markup=get_custom_menu_keyboard()
     )
 

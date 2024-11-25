@@ -177,7 +177,7 @@ async def get_order_history(user_id):
     
     
 # Логика барои истихроҷи маълумоти шахсӣ аз базаи маълумот
-async def get_user_info(user_id: int):
+async def get_user_info(user_id):
     session = SessionLocal()
     # Дар база ҷустуҷӯи маълумоти корбар бо user_id
     result = await session.execute(

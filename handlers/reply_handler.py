@@ -9,7 +9,8 @@ reply_router = Router()
 # Handle "Меню" button to show category keyboard
 @reply_router.message(F.text == "Категорияҳо")
 async def menu_handler(message: types.Message):
-    await message.answer("Категорияҳоро интихоб кунед:", reply_markup=get_category_keyboard())
+    keyboard = await get_category_keyboard()
+    await message.answer("Категорияҳоро интихоб кунед:", reply_markup=keyboard)
 
 # Ҳолати идоракунии "Сабад"
 @reply_router.message(F.text == "Сабад")

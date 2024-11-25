@@ -7,7 +7,7 @@ reply_router = Router()
 
 
 # Handle "Меню" button to show category keyboard
-@reply_router.message(F.text == "Меню")
+@reply_router.message(F.text == "🍔 Категорияҳо")
 async def menu_handler(message: types.Message):
     await message.answer("Категорияҳоро интихоб кунед:", reply_markup=get_category_keyboard())
 

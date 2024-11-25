@@ -46,7 +46,6 @@ async def cart_handler(message: types.Message):
 # Handle "Фармоишот" button to show past orders
 @reply_router.message(F.text == "Фармоишот")
 async def reply_orders_handler(message: types.Message):
-    session = SessionLocal()
     user_id = message.from_user.id
 
     # Гирифтани таърихи фармоишҳо

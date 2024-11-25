@@ -17,7 +17,7 @@ async def menu_handler(message: types.Message):
 async def cart_handler(message: types.Message):
     session = SessionLocal()
     user_id = message.from_user.id
-    cart_items = await get_cart_items(session, user_id)  # Сабадро барои истифодабаранда мегирем
+    cart_items = await get_cart_items(user_id)  # Сабадро барои истифодабаранда мегирем
 
     if not cart_items:
         await message.answer("Сабад холӣ аст.")
@@ -50,7 +50,7 @@ async def reply_orders_handler(message: types.Message):
     user_id = message.from_user.id
 
     # Гирифтани таърихи фармоишҳо
-    orders = await get_order_history(user_id, session)
+    orders = await get_order_history(user_id)
     
     if not orders:
         await message.answer("Шумо ҳоло фармоиш надоред.")

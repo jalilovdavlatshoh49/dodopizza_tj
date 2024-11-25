@@ -88,74 +88,77 @@ async def get_price(message: types.Message, state: FSMContext):
 
 
 
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 @admin_add_func_router.message(AddProductFSM.image_url)
 async def get_image_url(message: types.Message, state: FSMContext):
-     
+
     if message.photo:
-        # Агар корбар URL фиристад
         image_url = message.text
     else:
         await message.answer("Лутфан сурат ё URL-и дурусти тасвирро ирсол кунед.")
         await state.set_state(AddProductFSM.image_url)
         return
 
-    # Истифодаи URL барои илова ба база
     await state.update_data(image_url=image_url)
-    session = SessionLocal()
 
-    data = await state.get_data()
-    category = data['category']
-    name = data['name']
-    description = data['description']
-    price = data['price']
+    async with SessionLocal() as session:
+        data = await state.get_data()
+        category = data['category']
+        name = data['name']
+        description = data['description']
+        price = data['price']
 
-    table_mapping = {
-        "pizza": Pizza,
-        "combo": Combo,
-        "snacks": Snacks,
-        "desserts": Desserts,
-        "drinks": Drinks,
-        "sauces": Sauces,
-        "kids_love": Kids_Love,
-        "other_goods": OtherGoods
-    }
+        table_mapping = {
+            "pizza": Pizza,
+            "combo": Combo,
+            "snacks": Snacks,
+            "desserts": Desserts,
+            "drinks": Drinks,
+            "sauces": Sauces,
+            "kids_love": Kids_Love,
+            "other_goods": OtherGoods
+        }
 
-    if category not in table_mapping:
-        await message.answer(f"Категорияи '{category}' нодуруст аст. Лутфан категорияи дурустро интихоб кунед.")
-        return
+        if category not in table_mapping:
+            await message.answer(f"Категорияи '{category}' нодуруст аст. Лутфан категорияи дурустро интихоб кунед.")
+            return
 
-    product_model = table_mapping[category]
-    new_product = product_model(
-        name=name,
-        description=description,
-        price=price,
-        image_url=image_url
-    )
-    session.add(new_product)
-    session.commit()
+        product_model = table_mapping[category]
+        new_product = product_model(
+            name=name,
+            description=description,
+            price=price,
+            image_url=image_url
+        )
+        session.add(new_product)
+        await session.commit()
 
-    # Гирифтани маҳсулот бо филтр
-    filtered_product = session.query(product_model).filter_by(
-    name=name,
-    description=description,
-    price=price
-).first()
+        # Гирифтани маҳсулот бо select
+        query = select(product_model).where(
+            product_model.name == name,
+            product_model.description == description,
+            product_model.price == price
+        )
+        result = await session.execute(query)
+        filtered_product = result.scalars().first()
 
-    # Ҷавоб додан бо маълумоти гирифташуда
-    if filtered_product:
-        await message.answer_photo(
-            photo=filtered_product.image_url,
-            caption=(
-                f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
-            f"<b>Ном:</b> {filtered_product.name}\n"
-            f"<b>Тавсиф:</b> {filtered_product.description}\n"
-            f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
-        ),
-        parse_mode=ParseMode.HTML
-    )
-    else:
-        await message.answer("Маҳсулот ёфт нашуд. Лутфан бори дигар санҷед.")
+        # Ҷавоб додан бо маълумоти гирифташуда
+        if filtered_product:
+            await message.answer_photo(
+                photo=filtered_product.image_url,
+                caption=(
+                    f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
+                    f"<b>Ном:</b> {filtered_product.name}\n"
+                    f"<b>Тавсиф:</b> {filtered_product.description}\n"
+                    f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
+                ),
+                parse_mode=ParseMode.HTML
+            )
+        else:
+            await message.answer("Маҳсулот ёфт нашуд. Лутфан бори дигар санҷед.")
 
-# Пок кардани ҳолати FSM
+    # Пок кардани ҳолати FSM
     await state.clear()
 

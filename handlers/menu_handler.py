@@ -27,13 +27,13 @@ def get_custom_menu_keyboard():
 async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
     await message.answer(
-        text="\u200b",  # Матни ноаён
+        text="    ",  # Матни ноаён
         reply_markup=keyboard
     )
 
 
     await message.answer(
-        text="\u200b",  # Матни ноаён
+        text="   ",  # Матни ноаён
         reply_markup=get_custom_menu_keyboard()
     )
 

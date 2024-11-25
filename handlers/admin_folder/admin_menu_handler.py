@@ -13,18 +13,18 @@ def admin_menu_keyboard():
     # Сохтани клавиатура бо истифодаи ReplyKeyboardBuilder
     keyboard_builder = ReplyKeyboardBuilder()
 
-    # Илова кардани тугмаҳо
+    # Илова кардани тугмаҳо бо тартиби нав
     keyboard_builder.row(
-        KeyboardButton(text="➕ Зам кардани продукт"),
-        KeyboardButton(text="📋 Заказҳои интизорӣ (қабул нашуда)")
+        KeyboardButton(text="📂 Админ Меню"),  # Тугмаи аввал
+        KeyboardButton(text="➕ Зам кардани продукт")  # Тугмаи дуюм
     )
     keyboard_builder.row(
-        KeyboardButton(text="✅ Заказҳои қабулшуда"),
-        KeyboardButton(text="🚚 Заказҳои дар роҳ")
+        KeyboardButton(text="📋 Заказҳои интизорӣ (қабул нашуда)"),
+        KeyboardButton(text="✅ Заказҳои қабулшуда")
     )
     keyboard_builder.row(
-        KeyboardButton(text="🏠 Заказҳои расонидашуда"),
-        KeyboardButton(text="📂 Админ Меню")
+        KeyboardButton(text="🚚 Заказҳои дар роҳ"),
+        KeyboardButton(text="🏠 Заказҳои расонидашуда")
     )
 
     # Сохтани клавиатура
@@ -33,11 +33,9 @@ def admin_menu_keyboard():
 # Ҳендлер барои админ меню
 @admin_menu_router.message(Command("admin_menu"))
 async def admin_menu_handler(message: types.Message):
-    keyboard = await get_category_keyboard()
-    await message.answer("📂 Менюи админ:", reply_markup=keyboard)
-
+    
     reply_keyboard = admin_menu_keyboard()
-    await message.answer("a", reply_markup=reply_keyboard)
+    await message.answer("Хуш омадед ба саҳифаи админ", reply_markup=reply_keyboard)
 
 
 # Ҳендлер барои тугмаи "📂 Меню"

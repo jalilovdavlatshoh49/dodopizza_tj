@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.enums import ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kids_Love, OtherGoods
@@ -133,8 +134,7 @@ async def get_image_url(message: types.Message, state: FSMContext):
     session.add(new_product)
     await session.commit()
 
-    from aiogram.types import ParseMode
-
+    
     # Ҷавоб ба истифодабаранда
     await message.answer(
         f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"

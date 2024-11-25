@@ -157,7 +157,7 @@ async def get_image_url(message: types.Message, state: FSMContext):
         ),
         parse_mode=ParseMode.HTML
     )
-else:
+    else:
         await message.answer("Маҳсулот ёфт нашуд. Лутфан бори дигар санҷед.")
 
 # Пок кардани ҳолати FSM

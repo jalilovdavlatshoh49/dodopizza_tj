@@ -7,12 +7,12 @@ reply_router = Router()
 
 
 # Handle "Меню" button to show category keyboard
-@reply_router.message(F.text == "🍔 Категорияҳо")
+@reply_router.message(F.text == "Категорияҳо")
 async def menu_handler(message: types.Message):
     await message.answer("Категорияҳоро интихоб кунед:", reply_markup=get_category_keyboard())
 
 # Ҳолати идоракунии "Сабад"
-@reply_router.message(F.text == "🛒 Сабад")
+@reply_router.message(F.text == "Сабад")
 async def cart_handler(message: types.Message, session: AsyncSession):
     user_id = message.from_user.id
     cart_items = await get_cart_items(session, user_id)  # Сабадро барои истифодабаранда мегирем
@@ -42,7 +42,7 @@ async def cart_handler(message: types.Message, session: AsyncSession):
 
 
 # Handle "Фармоишот" button to show past orders
-@reply_router.message(F.text == "📜 Фармоишот")
+@reply_router.message(F.text == "Фармоишот")
 async def reply_orders_handler(message: types.Message):
     session = SessionLocal()
     user_id = message.from_user.id

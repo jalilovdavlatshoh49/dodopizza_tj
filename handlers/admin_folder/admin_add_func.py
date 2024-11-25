@@ -90,12 +90,8 @@ async def get_price(message: types.Message, state: FSMContext):
 
 @admin_add_func_router.message(AddProductFSM.image_url)
 async def get_image_url(message: types.Message, state: FSMContext):
-    if message.photo:
-        # Агар корбар тасвир фиристад
-        photo = message.photo[-1]  # Суратро дар сифати баланд гирем
-        file_path = await photo.download(destination_dir="images/")
-        image_url = file_path.name  # Номи файлро нигоҳ дорем
-    elif message.text and (message.text.startswith("http://") or message.text.startswith("https://")):
+     
+    if message.text and (message.text.startswith("http://") or message.text.startswith("https://")):
         # Агар корбар URL фиристад
         image_url = message.text
     else:

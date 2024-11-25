@@ -142,13 +142,15 @@ async def get_image_url(message: types.Message, state: FSMContext):
     session.add(new_product)
     session.commit()
 
-    # Ҷавоб ба истифодабаранда
-    await message.answer(
-        f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
-        f"<b>Ном:</b> {name}\n"
-        f"<b>Тавсиф:</b> {description}\n"
-        f"<b>Нарх:</b> {price} сомонӣ\n\n"
-        f"<a href='{image_url}'>Тасвирро бинед</a>",
+    # Ҷавоб ба истифодабаранда бо тасвир
+    await message.answer_photo(
+        photo=image_url,
+        caption=(
+            f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
+            f"<b>Ном:</b> {name}\n"
+            f"<b>Тавсиф:</b> {description}\n"
+            f"<b>Нарх:</b> {price} сомонӣ"
+        ),
         parse_mode=ParseMode.HTML
     )
 

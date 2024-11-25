@@ -145,35 +145,34 @@ async def set_commands():
     
     
     
-# Функсия барои гирифтани таърихи фармоишҳо
 async def get_order_history(user_id):
-    session = SessionLocal()
-    # Ҷустуҷӯи фармоишҳои истифодабаранда аз базаи додаҳо
-    orders = session.query(Order).filter(Order.user_id == user_id).all()
-    
-    order_history = []
-    for order in orders:
-        order_details = {
-            "status": order.status.value,
-            "items": []
-        }
-        
-        for item in order.cart.items:
-            product_model = globals()[item.product_type.capitalize()]  # Барои муайян кардани таблитса
-            product = session.query(product_model).filter(product_model.id == item.product_id).first()
-            if product:
-                order_details["items"].append({
-                    "name": product.name,
-                    "quantity": item.quantity,
-                    "price": product.price,
-                    "total_price": product.price * item.quantity,
-                    "image_url": product.image_url
-                })
-        
-        order_details["total_order_price"] = sum(item["total_price"] for item in order_details["items"])
-        order_history.append(order_details)
-    
-    return order_history
+    with SessionLocal() as session:
+        # Ҷустуҷӯи фармоишҳо
+        orders = session.query(Order).filter(Order.user_id == user_id).all()
+
+        order_history = []
+        for order in orders:
+            order_details = {
+                "status": order.status.value,
+                "items": []
+            }
+
+            for item in order.cart.items:
+                product_model = globals()[item.product_type.capitalize()]
+                product = session.query(product_model).filter(product_model.id == item.product_id).first()
+                if product:
+                    order_details["items"].append({
+                        "name": product.name,
+                        "quantity": item.quantity,
+                        "price": product.price,
+                        "total_price": product.price * item.quantity,
+                        "image_url": product.image_url
+                    })
+
+            order_details["total_order_price"] = sum(item["total_price"] for item in order_details["items"])
+            order_history.append(order_details)
+
+        return order_history
     
     
 # Логика барои истихроҷи маълумоти шахсӣ аз базаи маълумот

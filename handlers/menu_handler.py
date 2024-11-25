@@ -26,8 +26,8 @@ def get_custom_menu_keyboard():
 @menu_router.message(Command(commands=["menu"]))
 async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
-    await message.reply_markup(reply_markup=keyboard)
-    await message.reply_markup(reply_markup=get_custom_menu_keyboard())
+    await message.edit_message_reply_markup(reply_markup=keyboard)
+    await message.edit_message_reply_markup(reply_markup=get_custom_menu_keyboard())
 
     
 

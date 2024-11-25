@@ -90,32 +90,29 @@ async def get_price(message: types.Message, state: FSMContext):
 
 @admin_add_func_router.message(AddProductFSM.image_url)
 async def get_image_url(message: types.Message, state: FSMContext):
-    # Санҷиш барои URL ё тасвир
     if message.photo:
         # Агар корбар тасвир фиристад
         photo = message.photo[-1]  # Суратро дар сифати баланд гирем
-        file_info = await message.bot.get_file(photo.file_id)
-        image_url = f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
+        file_path = await photo.download(destination_dir="images/")
+        image_url = file_path.name  # Номи файлро нигоҳ дорем
     elif message.text and (message.text.startswith("http://") or message.text.startswith("https://")):
         # Агар корбар URL фиристад
         image_url = message.text
     else:
-        # Агар на тасвир ва на URL бошад
         await message.answer("Лутфан сурат ё URL-и дурусти тасвирро ирсол кунед.")
         await state.set_state(AddProductFSM.image_url)
         return
 
+    # Истифодаи URL барои илова ба база
     await state.update_data(image_url=image_url)
     session = SessionLocal()
 
-    # Гирифтани маълумоти воридшуда аз FSM
     data = await state.get_data()
     category = data['category']
     name = data['name']
     description = data['description']
     price = data['price']
 
-    # Пайваст кардани таблитсаи мувофиқ аз база
     table_mapping = {
         "pizza": Pizza,
         "combo": Combo,
@@ -131,7 +128,6 @@ async def get_image_url(message: types.Message, state: FSMContext):
         await message.answer(f"Категорияи '{category}' нодуруст аст. Лутфан категорияи дурустро интихоб кунед.")
         return
 
-    # Сабт ба база
     product_model = table_mapping[category]
     new_product = product_model(
         name=name,
@@ -142,17 +138,17 @@ async def get_image_url(message: types.Message, state: FSMContext):
     session.add(new_product)
     session.commit()
 
-    # Ҷавоб ба истифодабаранда бо тасвир
-    await message.answer_photo(
-        photo=image_url,
-        caption=(
-            f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
-            f"<b>Ном:</b> {name}\n"
-            f"<b>Тавсиф:</b> {description}\n"
-            f"<b>Нарх:</b> {price} сомонӣ"
-        ),
-        parse_mode=ParseMode.HTML
-    )
+    with open(image_url, 'rb') as photo_file:
+        await message.answer_photo(
+            photo=photo_file,
+            caption=(
+                f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
+                f"<b>Ном:</b> {name}\n"
+                f"<b>Тавсиф:</b> {description}\n"
+                f"<b>Нарх:</b> {price} сомонӣ"
+            ),
+            parse_mode=ParseMode.HTML
+        )
 
     await state.clear()
 

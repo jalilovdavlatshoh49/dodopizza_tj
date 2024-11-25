@@ -14,7 +14,8 @@ async def menu_handler(message: types.Message):
 
 # Ҳолати идоракунии "Сабад"
 @reply_router.message(F.text == "Сабад")
-async def cart_handler(message: types.Message, session: AsyncSession):
+async def cart_handler(message: types.Message):
+    session = SessionLocal()
     user_id = message.from_user.id
     cart_items = await get_cart_items(session, user_id)  # Сабадро барои истифодабаранда мегирем
 

@@ -146,9 +146,10 @@ async def set_commands():
     
     
 async def get_order_history(user_id):
-    with SessionLocal() as session:
-        # Ҷустуҷӯи фармоишҳо
-        orders = session.query(Order).filter(Order.user_id == user_id).all()
+    async with SessionLocal() as session:  # Use async context manager
+        # Query orders
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        orders = result.scalars().all()
 
         order_history = []
         for order in orders:
@@ -159,7 +160,8 @@ async def get_order_history(user_id):
 
             for item in order.cart.items:
                 product_model = globals()[item.product_type.capitalize()]
-                product = session.query(product_model).filter(product_model.id == item.product_id).first()
+                product = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+                product = product.scalars().first()
                 if product:
                     order_details["items"].append({
                         "name": product.name,

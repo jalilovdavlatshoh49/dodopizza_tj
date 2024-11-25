@@ -7,6 +7,36 @@ from database.tables import Order  # Ба модели худ истинод к�
 from sqlalchemy.sql import func
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+
+# Функсияи барои гирифтани маводҳои сабад
+async def get_cart_items(user_id: int):
+    session = SessionLocal()
+    # Йом кардани сабад барои истифодабаранда
+    result = await session.execute(select(Cart).filter(Cart.order.has(user_id=user_id)))
+    cart = result.scalars().first()
+
+    if not cart:
+        return []  # Агар сабад пайдо нашавад, рӯйхат холӣ бармегардад
+
+    cart_items = []
+    # Ба ҳар як ашёи сабад маълумотро гирем
+    for cart_item in cart.items:
+        # Модели маҳсулот мувофиқи product_type
+        product_model = globals().get(cart_item.product_type.capitalize())
+        if product_model:
+            product = await session.execute(select(product_model).filter(product_model.id == cart_item.product_id))
+            product = product.scalars().first()
+            
+            if product:
+                cart_items.append({
+                    'name': product.name,
+                    'price': product.price,
+                    'quantity': cart_item.quantity,
+                    'image_url': product.image_url
+                })
+    
+    return cart_items
+
 # Категорияҳои меню бо иловакунӣ барои нишон додани шумораи маҳсулот
 categories = {
     "pizza": "🍕 Pizza",

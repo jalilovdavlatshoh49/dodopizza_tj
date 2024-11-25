@@ -138,17 +138,28 @@ async def get_image_url(message: types.Message, state: FSMContext):
     session.add(new_product)
     session.commit()
 
-    with open(image_url, 'rb') as photo_file:
+    # Гирифтани маҳсулот бо филтр
+    filtered_product = session.query(product_model).filter_by(
+    name=name,
+    description=description,
+    price=price
+).first()
+
+    # Ҷавоб додан бо маълумоти гирифташуда
+    if filtered_product:
         await message.answer_photo(
-            photo=photo_file,
+            photo=filtered_product.image_url,
             caption=(
                 f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
-                f"<b>Ном:</b> {name}\n"
-                f"<b>Тавсиф:</b> {description}\n"
-                f"<b>Нарх:</b> {price} сомонӣ"
-            ),
-            parse_mode=ParseMode.HTML
-        )
+            f"<b>Ном:</b> {filtered_product.name}\n"
+            f"<b>Тавсиф:</b> {filtered_product.description}\n"
+            f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
+        ),
+        parse_mode=ParseMode.HTML
+    )
+else:
+        await message.answer("Маҳсулот ёфт нашуд. Лутфан бори дигар санҷед.")
 
+# Пок кардани ҳолати FSM
     await state.clear()
 

@@ -88,13 +88,23 @@ async def get_price(message: types.Message, state: FSMContext):
 
 
 
-# Гирифтани URL-и тасвир ва сабт ба базаи додаҳо
 @admin_add_func_router.message(AddProductFSM.image_url)
 async def get_image_url(message: types.Message, state: FSMContext):
-    if not message.photo:  # Агар паём сурат надошта бошад
-        await message.answer("Лутфан сурат ирсол намоед.")
+    # Санҷиш барои URL ё тасвир
+    if message.photo:
+        # Агар корбар тасвир фиристад
+        photo = message.photo[-1]  # Суратро дар сифати баланд гирем
+        file_info = await message.bot.get_file(photo.file_id)
+        image_url = f"https://api.telegram.org/file/bot{message.bot.token}/{file_info.file_path}"
+    elif message.text and (message.text.startswith("http://") or message.text.startswith("https://")):
+        # Агар корбар URL фиристад
+        image_url = message.text
+    else:
+        # Агар на тасвир ва на URL бошад
+        await message.answer("Лутфан сурат ё URL-и дурусти тасвирро ирсол кунед.")
         await state.set_state(AddProductFSM.image_url)
-    image_url = message.text
+        return
+
     await state.update_data(image_url=image_url)
     session = SessionLocal()
 
@@ -104,7 +114,6 @@ async def get_image_url(message: types.Message, state: FSMContext):
     name = data['name']
     description = data['description']
     price = data['price']
-    image_url = data['image_url']
 
     # Пайваст кардани таблитсаи мувофиқ аз база
     table_mapping = {
@@ -118,12 +127,11 @@ async def get_image_url(message: types.Message, state: FSMContext):
         "other_goods": OtherGoods
     }
 
-    # Санҷиши дурустии категория
     if category not in table_mapping:
         await message.answer(f"Категорияи '{category}' нодуруст аст. Лутфан категорияи дурустро интихоб кунед.")
         return
 
-    # Сабт кардани маълумот ба база
+    # Сабт ба база
     product_model = table_mapping[category]
     new_product = product_model(
         name=name,
@@ -132,18 +140,17 @@ async def get_image_url(message: types.Message, state: FSMContext):
         image_url=image_url
     )
     session.add(new_product)
-    await session.commit()
+    session.commit()
 
-    
     # Ҷавоб ба истифодабаранда
     await message.answer(
         f"<b>Маҳсулот ба категорияи '{category}' илова шуд!</b>\n\n"
-    f"<b>Ном:</b> {name}\n"
-    f"<b>Тавсиф:</b> {description}\n"
-    f"<b>Нарх:</b> {price} сомонӣ\n\n"
-    f"<a href='{image_url}'>Тасвирро бинед</a>",
-    parse_mode=ParseMode.HTML
-)
+        f"<b>Ном:</b> {name}\n"
+        f"<b>Тавсиф:</b> {description}\n"
+        f"<b>Нарх:</b> {price} сомонӣ\n\n"
+        f"<a href='{image_url}'>Тасвирро бинед</a>",
+        parse_mode=ParseMode.HTML
+    )
 
     await state.clear()
 

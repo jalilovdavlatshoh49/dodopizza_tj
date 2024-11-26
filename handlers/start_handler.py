@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from functions.all_func import get_category_keyboard
-from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, KidsLove, OtherGoods
+from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kidslove, OtherGoods
 from database.db import SessionLocal
 
 start_router = Router()

@@ -4,7 +4,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.types import KeyboardButton
 from database.db import SessionLocal
 from sqlalchemy.sql import func
-from functions.all_func import get_category_keyboard
+from functions.all_func import get_admin_category_keyboard
 # Истифодаи Router
 admin_menu_router = Router()
 
@@ -41,6 +41,6 @@ async def admin_menu_handler(message: types.Message):
 # Ҳендлер барои тугмаи "📂 Меню"
 @admin_menu_router.message(F.text == "📂 Админ Меню")
 async def category_menu_handler(message: types.Message):
-    keyboard = await get_category_keyboard()
+    keyboard = await get_admin_category_keyboard()
     await message.answer("📂 Интихоби категория:", reply_markup=keyboard)
     

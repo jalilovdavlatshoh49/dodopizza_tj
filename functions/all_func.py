@@ -85,6 +85,29 @@ async def get_category_keyboard():
     keyboard_builder.adjust(2)  # 2 тугма дар як сатр
     return keyboard_builder.as_markup()
 
+
+# Функсия барои эҷоди клавиатура бо категорияҳо
+async def get_admin_category_keyboard():
+    session = SessionLocal()
+    keyboard_builder = InlineKeyboardBuilder()
+
+    for key, label in categories.items():
+        model = model_map.get(key)
+        if model:
+            # Қисми ҳисоб кардани шумораи маҳсулот
+            stmt = select(func.count()).select_from(model)
+            result = await session.execute(stmt)
+            count = result.scalar() or 0
+            
+            # Илова кардани тугмаҳо бо маълумоти мувофиқ
+            button_text = f"{label} ({count})"
+            callback_data = f"category_{key}"
+            keyboard_builder.button(text=button_text, callback_data=f"admin_{callback_data}")
+
+    # Танзими тугмаҳо дар сатри пайдарпай
+    keyboard_builder.adjust(2)  # 2 тугма дар як сатр
+    return keyboard_builder.as_markup()
+
 # Create reply keyboard with styled options (to display at the bottom of the keyboard)
 def get_main_menu_keyboard():
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -105,30 +128,7 @@ def get_main_menu_keyboard():
     
     
 
-# Функсия барои эҷоди менюи асосӣ
-async def main_menu():
-    builder = InlineKeyboardBuilder()
 
-    categories = [
-        ("Пицца 🍕", "pizza"),
-        ("Комбо 🍱", "combo"),
-        ("Закуски 🍟", "snacks"),
-        ("Десерты 🍰", "desserts"),
-        ("Напитки 🥤", "drinks"),
-        ("Соусы 🥫", "sauces"),
-        ("Любят дети 🧸", "kids_love"),
-        ("Другие товары 📦", "other_goods")
-    ]
-
-    # Илова кардани тугмаҳо ба клавиатура
-    for name, callback_data in categories:
-        builder.button(text=name, callback_data=callback_data)
-
-    # Танзими 2 тугма дар як сатр
-    builder.adjust(2)
-
-    # Бозгардони клавиатура
-    return builder.as_markup()
 
 
 # Командоҳои бот

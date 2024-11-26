@@ -58,7 +58,7 @@ model_map = {
     "desserts": Desserts,
     "drinks": Drinks,
     "sauces": Sauces,
-    "kidslove": Kids_Love,
+    "kidslove": KidsLove,
     "othergoods": OtherGoods
 }
 

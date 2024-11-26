@@ -2,7 +2,6 @@ from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters.state import State, StatesGroup
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.db import SessionLocal
 
@@ -12,7 +11,8 @@ admin_product_router = Router()
 
 # Callback query-ро коркард мекунем
 @admin_product_router.callback_query(lambda c: c.data.startswith("admin_category_"))
-async def handle_category(callback_query: CallbackQuery, session: AsyncSession):
+async def handle_category(callback_query: CallbackQuery):
+    session = SessionLocal()
     category = callback_query.data.split("_")[-1]
 
     # Модели мувофиқро муайян мекунем

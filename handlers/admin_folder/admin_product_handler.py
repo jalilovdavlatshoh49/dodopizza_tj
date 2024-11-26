@@ -14,26 +14,26 @@ admin_product_router = Router()
 @admin_product_router.callback_query(lambda c: c.data.startswith("admin_category_"))
 async def handle_category(callback_query: CallbackQuery, session: AsyncSession):
     category = callback_query.data.split("_")[-1]
-    
-    session = SessionLocal()
+
     # Модели мувофиқро муайян мекунем
     product_model = globals()[category.capitalize()]
     query = select(product_model)
     result = await session.execute(query)
     products = result.scalars().all()
-    
-    # Клавиатураро месозем
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    
+
+    if not products:
+        await callback_query.message.answer("Дар ин категория маҳсулоте вуҷуд надорад.")
+        return
+
     for product in products:
         product_text = (
-            f"{product.image_url}"
             f"📦 {product.name}\n"
             f"📜 Тавсиф: {product.description}\n"
             f"💵 Нархи: {product.price} сомонӣ\n"
         )
-        
-        # Тугма барои идоракунии маҳсулот
+
+        # Клавиатураро барои идоракунии маҳсулот месозем
+        keyboard = InlineKeyboardMarkup(row_width=1)
         keyboard.add(
             InlineKeyboardButton(
                 text=f"✏️ Иваз {product.name}",
@@ -45,8 +45,10 @@ async def handle_category(callback_query: CallbackQuery, session: AsyncSession):
             )
         )
 
-        await callback_query.answer(
-            text=product_text,
+        # Ирсоли тасвир бо матн ва клавиатура
+        await callback_query.message.answer_photo(
+            photo=product.image_url,
+            caption=product_text,
             reply_markup=keyboard
         )
         

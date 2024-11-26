@@ -5,7 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.enums import ParseMode
 from sqlalchemy.future import select
-from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kids_Love, OtherGoods
+from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, KidsLove, OtherGoods
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from database.db import SessionLocal
 # Модели FSM барои илова кардани маҳсулот

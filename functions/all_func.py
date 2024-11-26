@@ -101,8 +101,8 @@ async def get_admin_category_keyboard():
             
             # Илова кардани тугмаҳо бо маълумоти мувофиқ
             button_text = f"{label} ({count})"
-            callback_data = f"category_{key}"
-            keyboard_builder.button(text=button_text, callback_data=f"admin_{callback_data}")
+            callback_data = f"admin_category_{key}"
+            keyboard_builder.button(text=button_text, callback_data=callback_data)
 
     # Танзими тугмаҳо дар сатри пайдарпай
     keyboard_builder.adjust(2)  # 2 тугма дар як сатр

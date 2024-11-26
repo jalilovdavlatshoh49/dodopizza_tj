@@ -56,7 +56,7 @@ async def handle_category(callback_query: CallbackQuery):
                 # caption=product_text,
                 # reply_markup=builder.as_markup()
             # )
-            await callback_query.message.answer(caption, reply_markup=builder.as_markup())
+            await callback_query.message.answer(product_text, reply_markup=builder.as_markup())
  
 
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))

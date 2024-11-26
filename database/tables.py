@@ -60,7 +60,7 @@ class Sauces(Base):
     price = Column(Integer)
     image_url = Column(String(512))
 
-class Kids_Love(Base):
+class KidsLove(Base):
     __tablename__ = 'kids_love'
 
     id = Column(Integer, primary_key=True, index=True)

@@ -10,6 +10,8 @@ from database.tables import *
 # Router setup for admin product handling
 admin_product_router = Router()
 
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 # Callback query-ро коркард мекунем
 @admin_product_router.callback_query(lambda c: c.data.startswith("admin_category_"))
 async def handle_category(callback_query: CallbackQuery):
@@ -34,14 +36,16 @@ async def handle_category(callback_query: CallbackQuery):
             )
 
             # Клавиатураро барои идоракунии маҳсулот месозем
-            keyboard = InlineKeyboardMarkup(row_width=1)
-            keyboard.add(
+            builder = InlineKeyboardBuilder()
+            builder.add(
                 InlineKeyboardButton(
-                    text=f"✏️ Иваз {product.name}",
+                    text=f"✏️ Иваз",
                     callback_data=f"edit_{category}_{product.id}"
-                ),
+                )
+            )
+            builder.add(
                 InlineKeyboardButton(
-                    text=f"❌ Ҳазф {product.name}",
+                    text=f"❌ Ҳазф",
                     callback_data=f"delete_{category}_{product.id}"
                 )
             )
@@ -50,7 +54,7 @@ async def handle_category(callback_query: CallbackQuery):
             await callback_query.message.answer_photo(
                 photo=product.image_url,
                 caption=product_text,
-                reply_markup=keyboard
+                reply_markup=builder.as_markup()
             )
 
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))

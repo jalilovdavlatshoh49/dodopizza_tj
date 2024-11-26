@@ -5,6 +5,7 @@ from aiogram.filters.state import State, StatesGroup
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
+from database.tables import *
 
 # Router setup for admin product handling
 admin_product_router = Router()

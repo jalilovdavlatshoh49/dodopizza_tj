@@ -4,7 +4,6 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.enums import ParseMode
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kids_Love, OtherGoods
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
@@ -88,14 +87,13 @@ async def get_price(message: types.Message, state: FSMContext):
 
 
 
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 @admin_add_func_router.message(AddProductFSM.image_url)
 async def get_image_url(message: types.Message, state: FSMContext):
 
     if message.photo:
-        image_url = message.text
+        # Download the photo or get its file ID
+        photo = message.photo[-1]  # Get the highest resolution photo
+        image_url = photo.file_id
     else:
         await message.answer("Лутфан сурат ё URL-и дурусти тасвирро ирсол кунед.")
         await state.set_state(AddProductFSM.image_url)

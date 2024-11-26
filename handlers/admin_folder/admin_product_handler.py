@@ -53,9 +53,9 @@ async def handle_category(callback_query: CallbackQuery):
             # Ирсоли тасвир бо матн ва клавиатура
             # await callback_query.message.answer_photo(
                 # photo=product.image_url,
-                caption=product_text,
-                reply_markup=builder.as_markup()
-            )
+                # caption=product_text,
+                # reply_markup=builder.as_markup()
+            # )
             await callback_query.message.answer(caption, reply_markup=builder.as_markup())
  
 

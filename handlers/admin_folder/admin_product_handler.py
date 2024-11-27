@@ -59,7 +59,34 @@ async def handle_category(callback_query: CallbackQuery):
             
  
 
+# Callback query барои оғози тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))
+async def confirm_delete_product(callback_query: CallbackQuery):
+    _, category, product_id = callback_query.data.split("_")
+
+    # Паёми тасдиқ бо клавиатураи "Ҳа" ва "Не"
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        InlineKeyboardButton(
+            text="Ҳа",
+            callback_data=f"confirm_delete_{category}_{product_id}"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="Не",
+            callback_data="cancel_delete"
+        )
+    )
+    await callback_query.message.answer(
+        "Шумо мутмаин ҳастед, ки мехоҳед маҳсулотро ҳазф кунед?",
+        reply_markup=builder.as_markup()
+    )
+    await callback_query.answer()
+
+
+# Callback query барои тасдиқи ҳазф
+@admin_product_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
 async def delete_product(callback_query: CallbackQuery):
     _, category, product_id = callback_query.data.split("_")
     product_model = globals()[category.capitalize()]
@@ -71,12 +98,18 @@ async def delete_product(callback_query: CallbackQuery):
         if product:
             await session.delete(product)
             await session.commit()
+            await callback_query.message.answer("Маҳсулот бо муваффақият ҳазф шуд.")
             await callback_query.message.delete()
-            await callback_query.message.answer("Ҳазф шуд")
-            
             await callback_query.answer()
         else:
             await callback_query.answer("Маҳсулот ёфт нашуд!")
+
+
+# Callback query барои бекор кардани ҳазф
+@admin_product_router.callback_query(lambda c: c.data == "cancel_delete")
+async def cancel_delete(callback_query: CallbackQuery):
+    await callback_query.message.answer("Ҳазфкунӣ бекор шуд.")
+    await callback_query.answer()
 
 # Define the state machine
 class ProductEdit(StatesGroup):

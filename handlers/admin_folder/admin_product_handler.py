@@ -121,10 +121,10 @@ async def cancel_delete(callback_query: CallbackQuery):
                     callback_data=f"delete_{category}_{product.id}"
                 )
             )
-    await callback_query.message.edit_reply_markup(
+            await callback_query.message.edit_reply_markup(
     reply_markup=builder.as_markup()
 )
-    await callback_query.answer()
+            await callback_query.answer()
    
 
 # Define the state machine

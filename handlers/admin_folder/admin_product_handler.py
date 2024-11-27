@@ -78,10 +78,9 @@ async def confirm_delete_product(callback_query: CallbackQuery):
             callback_data="cancel_delete"
         )
     )
-    await callback_query.message.answer(
-        "Шумо мутмаин ҳастед, ки мехоҳед маҳсулотро ҳазф кунед?",
-        reply_markup=builder.as_markup()
-    )
+    await callback_query.message.edit_reply_markup(
+    reply_markup=builder.as_markup()
+)
     await callback_query.answer()
 
 

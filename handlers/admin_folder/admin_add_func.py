@@ -115,7 +115,7 @@ async def get_image_url(message: types.Message, state: FSMContext):
             "desserts": Desserts,
             "drinks": Drinks,
             "sauces": Sauces,
-            "kids_love": Kids_Love,
+            "kids_love": Kidslove,
             "other_goods": OtherGoods
         }
 

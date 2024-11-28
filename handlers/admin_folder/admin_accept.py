@@ -1,8 +1,8 @@
 from aiogram import Router, types
 from sqlalchemy.future import select
-from database.tables import Cart, OrderStatus  # Ба модели худ истинод кунед
+from database.tables import OrderStatus  # Ба модели худ истинод кунед
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from database.db import SessionLocal
+from database.db import Cart, SessionLocal
 admin_accept = Router()
 
 

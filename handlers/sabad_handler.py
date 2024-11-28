@@ -196,9 +196,17 @@ async def increase_quantity(call: types.CallbackQuery):
         await cart.add_item(category, product_id, quantity=1)
         await session.commit()
 
-        # Обновление клавиатуры
-        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
-        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        # Ҷустуҷӯи cart_item бо истифодаи асинхронӣ
+        async with session.begin():
+            result = await session.execute(
+            select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
+        )
+            cart_item = result.scalars().first()  # Истифодаи first ба ҷои next
+
+        if cart_item:
+            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        else:
+            await call.answer("Маҳсулоти дархостшуда ёфт нашуд!", show_alert=True)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("decrease_"))
@@ -224,8 +232,15 @@ async def decrease_quantity(call: types.CallbackQuery):
 
         await session.commit()
 
-        # Обновление клавиатуры
-        if any(item.product_type == category and item.product_id == product_id for item in cart.items):
+        async with session.begin():
+            result = await session.execute(
+            select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
+        )
+            cart_items = result.scalars().all()
+
+        if cart_items:
+        # Барои гирифтани аввалин мувофиқ, агар чизи мувофиқ ёфта шавад
+            cart_item = cart_items[0]
             await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
         else:
             await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[

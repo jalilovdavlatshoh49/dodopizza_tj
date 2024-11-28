@@ -52,6 +52,8 @@ async def handle_category(callback_query: CallbackQuery):
                 )
             )
 
+            await callback_query.message.delete()
+
             await callback_query.message.answer_photo(
                 photo=product.image_url,
                 caption=product_text,

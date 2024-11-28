@@ -150,10 +150,14 @@ async def buy_product(call: types.CallbackQuery):
         if not cart:
             cart = Cart(user_id=user_id)
             session.add(cart)
-            await session.commit()
+            await session.flush()
 
         # Поиск продукта
-        product_model = globals()[category.capitalize()]  # Автоматическое определение модели
+        product_model = globals().get(category.capitalize())
+        if not product_model:
+            await call.answer("Категория ёфт нашуд!", show_alert=True)
+            return
+
         result = await session.execute(select(product_model).filter(product_model.id == product_id))
         product = result.scalars().first()
         if not product:
@@ -161,66 +165,70 @@ async def buy_product(call: types.CallbackQuery):
             return
 
         # Добавление продукта в корзину
-        cart.add_item(category, product_id, quantity=1)
+        await cart.add_item(category, product_id, quantity=1)
         await session.commit()
 
         # Отправка клавиатуры
         cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
         await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
 
+
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))
 async def increase_quantity(call: types.CallbackQuery):
-    session = SessionLocal()
-    """Увеличение количества продукта."""
-    data = call.data.split("_")
-    category, product_id = data[1], int(data[2])
+    async with SessionLocal() as session:
+        """Увеличение количества продукта."""
+        data = call.data.split("_")
+        category, product_id = data[1], int(data[2])
 
-    # Поиск корзины и товара
-    user_id = call.from_user.id
-    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
-    if not cart:
-        await call.answer("Корзина холӣ аст!", show_alert=True)
-        return
+        # Поиск корзины и товара
+        user_id = call.from_user.id
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            await call.answer("Корзина холӣ аст!", show_alert=True)
+            return
 
-    cart.add_item(category, product_id, quantity=1)
-    session.commit()
+        await cart.add_item(category, product_id, quantity=1)
+        await session.commit()
 
-    # Обновление клавиатуры
-    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
-    await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        # Обновление клавиатуры
+        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+
 
 @sabad_router.callback_query(lambda call: call.data.startswith("decrease_"))
 async def decrease_quantity(call: types.CallbackQuery):
-    session = SessionLocal()
-    """Уменьшение количества продукта."""
-    data = call.data.split("_")
-    category, product_id = data[1], int(data[2])
+    async with SessionLocal() as session:
+        """Уменьшение количества продукта."""
+        data = call.data.split("_")
+        category, product_id = data[1], int(data[2])
 
-    # Поиск корзины и товара
-    user_id = call.from_user.id
-    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
-    if not cart:
-        await call.answer("Корзина холӣ аст!", show_alert=True)
-        return
+        # Поиск корзины и товара
+        user_id = call.from_user.id
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            await call.answer("Корзина холӣ аст!", show_alert=True)
+            return
 
-    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
-    if cart_item.quantity > 1:
-        cart_item.quantity -= 1
-    else:
-        cart.remove_item(category, product_id)
+        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+        else:
+            await cart.remove_item(category, product_id)
 
-    session.commit()
+        await session.commit()
 
-    # Обновление клавиатуры
-    if cart_item.quantity > 0:
-        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
-    else:
-        await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text=f"Харид {cart_item.price} сомонӣ",
-                                     callback_data=f"buy_{category}_{product_id}")
-            ]
-        ]))
+        # Обновление клавиатуры
+        if any(item.product_type == category and item.product_id == product_id for item in cart.items):
+            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        else:
+            await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=f"Харид {product.price} сомонӣ",
+                                         callback_data=f"buy_{category}_{product_id}")
+                ]
+            ]))
 
 
 

@@ -132,22 +132,22 @@ class Order(Base):
         self.latitude = latitude
         self.longitude = longitude
 
-# Иловаи атрибут барои сабади заказ
 class Cart(Base):
     __tablename__ = 'cart'
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    items = relationship("CartItem", back_populates="cart")  # Элементои сабад
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Ҳолати заказ
+    user_id = Column(BigInteger, index=True)  # Add this field to link the cart with a user
+    items = relationship("CartItem", back_populates="cart")  # Items in the cart
+    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Status of the order
     order = relationship("Order", back_populates="cart", uselist=False)
 
     def add_item(self, product_type, product_id, quantity=1):
         item = next((item for item in self.items if item.product_type == product_type and item.product_id == product_id), None)
         if item:
-            item.quantity += quantity  # Агар маҳсулот вуҷуд дошта бошад, миқдорро зиёд кунем
+            item.quantity += quantity  # If the product already exists, increase the quantity
         else:
             new_item = CartItem(product_type=product_type, product_id=product_id, quantity=quantity)
-            self.items.append(new_item)  # Маҳсулоти навро ба сабад илова мекунем
+            self.items.append(new_item)  # Add the new product to the cart
 
     def remove_item(self, product_type, product_id):
         self.items = [item for item in self.items if not (item.product_type == product_type and item.product_id == product_id)]
@@ -155,7 +155,7 @@ class Cart(Base):
     def get_total_price(self, session):
         total_price = 0
         for item in self.items:
-            product_model = globals()[item.product_type.capitalize()]  # Барои муайян кардани таблитса
+            product_model = globals()[item.product_type.capitalize()]  # Determine the table
             product = session.query(product_model).filter(product_model.id == item.product_id).first()
             if product:
                 total_price += product.price * item.quantity

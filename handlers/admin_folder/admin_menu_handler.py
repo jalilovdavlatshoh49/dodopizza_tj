@@ -43,4 +43,9 @@ async def admin_menu_handler(message: types.Message):
 async def category_menu_handler(message: types.Message):
     keyboard = await get_admin_category_keyboard()
     await message.answer("📂 Интихоби категория:", reply_markup=keyboard)
+
+@admin_menu_router.callbackquery(lambda c: c.data == "exit_to_admin_menu")
+async def exit_to_category_menu_handler(message: types.Message):
+    keyboard = await get_admin_category_keyboard()
+    await message.answer("📂 Интихоби категория:", reply_markup=keyboard)
     

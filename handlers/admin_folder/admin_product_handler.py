@@ -100,7 +100,7 @@ async def delete_product(callback_query: CallbackQuery):
         if product:
             await session.delete(product)
             await session.commit()
-            await callback_query.message.answer("Маҳсулот бо муваффақият ҳазф шуд.")
+            await callback_query.answer("Маҳсулот бо муваффақият ҳазф шуд.")
             await callback_query.message.delete()
         else:
             await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)

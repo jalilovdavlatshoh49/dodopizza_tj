@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.state import State, StatesGroup
+from aiogram.types import ContentType
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
@@ -199,13 +200,12 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.message.answer(messages.get(attribute, "Маълумоти нодуруст!"))
 
 # Handling value input (name, description, price, image_url)
-@admin_product_router.message(ProductEdit.waiting_for_value)
+@admin_product_router.message(ProductEdit.waiting_for_value, content_types=[ContentType.TEXT, ContentType.PHOTO])
 async def process_value(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     product_id = user_data['product_id']
     category = user_data['category']
     attribute = user_data['attribute']
-    value = message.text
 
     async with SessionLocal() as session:
         product_model = globals()[category.capitalize()]
@@ -216,13 +216,18 @@ async def process_value(message: types.Message, state: FSMContext):
         if product:
             try:
                 if attribute == "name":
-                    product.name = value
+                    product.name = message.text
                 elif attribute == "description":
-                    product.description = value
+                    product.description = message.text
                 elif attribute == "price":
-                    product.price = int(value)
-                elif attribute == "image_url":
-                    product.image_url = value
+                    product.price = int(message.text)
+                elif attribute == "image_url" and message.photo:
+                    # Downloading the photo
+                    photo = message.photo[-1]
+                    file_path = await message.bot.get_file(photo.file_id)
+                    file_url = f"https://api.telegram.org/file/bot{message.bot.token}/{file_path.file_path}"
+                    product.image_url = file_url
+
                 await session.commit()
                 await message.answer(f"Маълумоти {attribute} иваз шуд.")
             except Exception as e:

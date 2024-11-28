@@ -8,7 +8,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
 from database.tables import *
-from aiogram.dispatcher.filters.state import StateFilter
+
 
 
 # Router setup for admin product handling

@@ -231,14 +231,55 @@ async def process_value(message: types.Message, state: FSMContext):
                     product.image_url = photo.file_id
 
                 await session.commit()
-                exit_builder = InlineKeyboardBuilder()
-                exit_builder.add(
-            InlineKeyboardButton(
-                text="🔙 Меню",
-                callback_data="exit_to_admin_menu"
-            )
+                        # Гирифтани маҳсулот бо select
+                query = select(product_model).where(
+            product_model.id == int(product_id)
         )
-                await message.answer(f"Маълумот иваз шуд.", reply_markup=exit_builder.as_markup())
+            result = await session.execute(query)
+            filtered_product = result.scalars().first()
+
+        # Ҷавоб додан бо маълумоти гирифташуда
+            if filtered_product:
+
+                builder = InlineKeyboardBuilder()
+
+                # Илова кардани тугмаи "Иваз"
+                builder.add(
+                InlineKeyboardButton(
+                    text="✏️ Иваз",
+                    callback_data=f"edit_{category}_{filtered_product.id}"
+                        )
+                    )
+
+                # Илова кардани тугмаи "Ҳазф"
+                builder.add(
+                InlineKeyboardButton(
+        text="❌ Ҳазф",
+        callback_data=f"delete_{category}_{filtered_product.id}"
+    )
+)
+
+                # Илова кардани тугмаи "Ба қафо" дар қатор алоҳида
+                builder.add(
+    InlineKeyboardButton(
+        text="🔙 Ба қафо",
+        callback_data="exit_to_admin_menu"
+    ),
+    row=1  # Тугмаи "Ба қафо" дар қатор алоҳида хоҳад буд
+)
+
+
+                await message.answer_photo(
+                photo=filtered_product.image_url,
+                caption=(
+                    f"<b>Иваз карда шуд</b>\n\n"
+                    f"<b>Ном:</b> {filtered_product.name}\n"
+                    f"<b>Тавсиф:</b> {filtered_product.description}\n"
+                    f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
+                ),
+                reply_markup=builder.as_markup(),
+                parse_mode=ParseMode.HTML
+            )
             except Exception as e:
                 await message.answer(f"Хатогӣ: {e}")
         else:

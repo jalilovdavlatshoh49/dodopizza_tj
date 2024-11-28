@@ -239,28 +239,28 @@ async def process_value(message: types.Message, state: FSMContext):
                 filtered_product = result.scalars().first()
 
         # Ҷавоб додан бо маълумоти гирифташуда
-            if filtered_product:
+                if filtered_product:
 
-                builder = InlineKeyboardBuilder()
+                    builder = InlineKeyboardBuilder()
 
-                # Илова кардани тугмаи "Иваз"
-                builder.add(
+                    # Илова кардани тугмаи "Иваз"
+                    builder.add(
                 InlineKeyboardButton(
                     text="✏️ Иваз",
                     callback_data=f"edit_{category}_{filtered_product.id}"
                         )
                     )
 
-                # Илова кардани тугмаи "Ҳазф"
-                builder.add(
+                    # Илова кардани тугмаи "Ҳазф"
+                    builder.add(
                 InlineKeyboardButton(
         text="❌ Ҳазф",
         callback_data=f"delete_{category}_{filtered_product.id}"
     )
 )
 
-                # Илова кардани тугмаи "Ба қафо" дар қатор алоҳида
-                builder.add(
+                    # Илова кардани тугмаи "Ба қафо" дар қатор алоҳида
+                    builder.add(
     InlineKeyboardButton(
         text="🔙 Ба қафо",
         callback_data="exit_to_admin_menu"
@@ -269,7 +269,7 @@ async def process_value(message: types.Message, state: FSMContext):
 )
 
 
-                await message.answer_photo(
+                    await message.answer_photo(
                 photo=filtered_product.image_url,
                 caption=(
                     f"<b>Иваз карда шуд</b>\n\n"

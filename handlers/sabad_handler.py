@@ -175,7 +175,7 @@ async def buy_product(call: types.CallbackQuery):
             # Отправка клавиатуры
             await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
         else:
-        await call.answer("Элемент не найден", show_alert=True)
+            await call.answer("Элемент не найден", show_alert=True)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))

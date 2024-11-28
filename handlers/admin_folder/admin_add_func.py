@@ -144,6 +144,22 @@ async def get_image_url(message: types.Message, state: FSMContext):
 
         # Ҷавоб додан бо маълумоти гирифташуда
         if filtered_product:
+            
+            builder = InlineKeyboardBuilder()
+            builder.add(
+                InlineKeyboardButton(
+                    text="✏️ Иваз",
+                    callback_data=f"edit_{category}_{product.id}"
+                )
+            )
+            builder.add(
+                InlineKeyboardButton(
+                    text="❌ Ҳазф",
+                    callback_data=f"delete_{category}_{product.id}"
+                )
+            )
+
+
             await message.answer_photo(
                 photo=filtered_product.image_url,
                 caption=(
@@ -152,6 +168,7 @@ async def get_image_url(message: types.Message, state: FSMContext):
                     f"<b>Тавсиф:</b> {filtered_product.description}\n"
                     f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
                 ),
+                reply_markup=builder.as_markup(),
                 parse_mode=ParseMode.HTML
             )
         else:

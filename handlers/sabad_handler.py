@@ -133,17 +133,15 @@ def get_keyboard(cart_item: CartItem):
     ])
     return keyboard
 
-from sqlalchemy.future import select
 
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
-        """Обработка покупки продукта."""
         data = call.data.split("_")
         category, product_id = data[1], int(data[2])
+        user_id = call.from_user.id
 
         # Поиск или создание корзины
-        user_id = call.from_user.id
         result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
         cart = result.scalars().first()
         if not cart:
@@ -164,7 +162,7 @@ async def buy_product(call: types.CallbackQuery):
             return
 
         # Добавление продукта в корзину
-        await cart.add_item(category, product_id, quantity=1)
+        await cart.add_item(session, category, product_id, quantity=1)
         await session.commit()
 
         # Отправка клавиатуры

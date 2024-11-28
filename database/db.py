@@ -26,47 +26,41 @@ class Cart(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
     order = relationship("Order", back_populates="cart", uselist=False)
 
-    async def add_item(self, product_type, product_id, quantity=1):
-        async with SessionLocal() as session:
-            result = await session.execute(select(CartItem).filter(
-                CartItem.cart_id == self.id,
-                CartItem.product_type == product_type,
-                CartItem.product_id == product_id
-            ))
-            existing_item = result.scalars().first()
+    async def add_item(self, session, product_type, product_id, quantity=1):
+        result = await session.execute(select(CartItem).filter(
+            CartItem.cart_id == self.id,
+            CartItem.product_type == product_type,
+            CartItem.product_id == product_id
+        ))
+        existing_item = result.scalars().first()
 
-            if existing_item:
-                existing_item.quantity += quantity
-            else:
-                new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
-                session.add(new_item)
+        if existing_item:
+            existing_item.quantity += quantity
+        else:
+            new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+            session.add(new_item)
 
-            await session.commit()  # Сабти тағйирот
+    async def remove_item(self, session, product_type, product_id):
+        result = await session.execute(select(CartItem).filter(
+            CartItem.cart_id == self.id,
+            CartItem.product_type == product_type,
+            CartItem.product_id == product_id
+        ))
+        existing_item = result.scalars().first()
 
-    async def remove_item(self, product_type, product_id):
-        async with SessionLocal() as session:
-            result = await session.execute(select(CartItem).filter(
-                CartItem.cart_id == self.id,
-                CartItem.product_type == product_type,
-                CartItem.product_id == product_id
-            ))
-            existing_item = result.scalars().first()
+        if existing_item:
+            await session.delete(existing_item)
 
-            if existing_item:
-                await session.delete(existing_item)
-            await session.commit()  # Сабти тағйирот
-
-    async def get_total_price(self):
-        async with SessionLocal() as session:
-            total_price = 0
-            for item in self.items:
-                product_model = globals().get(item.product_type.capitalize())
-                if product_model:
-                    result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
-                    product = result.scalars().first()
-                    if product:
-                        total_price += product.price * item.quantity
-            return total_price
+    async def get_total_price(self, session):
+        total_price = 0
+        for item in self.items:
+            product_model = globals().get(item.product_type.capitalize())
+            if product_model:
+                result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+                product = result.scalars().first()
+                if product:
+                    total_price += product.price * item.quantity
+        return total_price
 
 
 async def init_db():

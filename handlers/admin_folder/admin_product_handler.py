@@ -139,7 +139,7 @@ class ProductEdit(StatesGroup):
     waiting_for_attribute = State()  # State for attribute selection
     waiting_for_value = State()  # State for value input
 
-@admin_product_router.callback_query(lambda c: c.data.startswith("edit_"))
+@admin_product_router.callback_query(lambda c: c.data.startswith("edit_") and len(c.data.split("_")) == 3)
 async def edit_product(callback_query: CallbackQuery):
     _, category, productid = callback_query.data.split("_")
 

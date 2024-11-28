@@ -107,8 +107,8 @@ async def delete_product(callback_query: CallbackQuery):
 # Callback query барои бекор кардани ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
 async def cancel_delete(callback_query: CallbackQuery):
-    _, category, product_id = callback_query.data.split("_")
-    # Клавиатураро барои идоракунии маҳсулот месозем
+            _, category, product_id = callback_query.data.split("_")
+            # Клавиатураро барои идоракунии маҳсулот месозем
             builder = InlineKeyboardBuilder()
             builder.add(
                 InlineKeyboardButton(

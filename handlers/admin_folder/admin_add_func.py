@@ -149,13 +149,13 @@ async def get_image_url(message: types.Message, state: FSMContext):
             builder.add(
                 InlineKeyboardButton(
                     text="✏️ Иваз",
-                    callback_data=f"edit_{category}_{product.id}"
+                    callback_data=f"edit_{category}_{filtered_product.id}"
                 )
             )
             builder.add(
                 InlineKeyboardButton(
                     text="❌ Ҳазф",
-                    callback_data=f"delete_{category}_{product.id}"
+                    callback_data=f"delete_{category}_{filtered_product.id}"
                 )
             )
 

@@ -60,6 +60,23 @@ async def handle_category(callback_query: CallbackQuery):
                 reply_markup=builder.as_markup()
             )
 
+        
+
+        total_products = len(products)
+        page_text = f"Аз {total_products} маҳсулот, {total_products} дона нишон дода шуд"
+        # Матни шумораи маҳсулот ва тугмаи ба қафо
+        exit_builder = InlineKeyboardBuilder()
+        exit_builder.add(
+            InlineKeyboardButton(
+                text="🔙 Ба қафо",
+                callback_data="exit_to_admin_menu"
+            )
+        )
+        await callback_query.message.answer(
+            page_text,
+            reply_markup=exit_builder.as_markup()
+        )
+
 
 # Callback query барои оғози тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))

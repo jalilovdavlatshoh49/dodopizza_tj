@@ -8,7 +8,6 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
 from database.tables import *
-from aiogram.filters import Text, Photo
 from aiogram.dispatcher.filters.state import StateFilter
 
 
@@ -207,7 +206,7 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
 admin_product_router = Router()
 
 # Handling value input (name, description, price, image_url)
-@admin_product_router.message(StateFilter(ProductEdit.waiting_for_value), Text() | Photo())
+@admin_product_router.message(StateFilter(ProductEdit.waiting_for_value))
 async def process_value(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     product_id = user_data['product_id']

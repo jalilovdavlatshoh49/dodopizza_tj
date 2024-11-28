@@ -113,19 +113,8 @@ async def show_cart(target, user_id: int):
             )
 
 
-from aiogram import Router, types
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from sqlalchemy.orm import Session
-from models import Cart, CartItem, Pizza  # Моделҳоро ворид кунед
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-# Танзимоти SQLAlchemy
-DATABASE_URL = "sqlite:///your_database.db"  # URL-и базаи маълумотҳо
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-sabad_router = Router()
 
 def get_keyboard(cart_item: CartItem):
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
@@ -146,7 +135,8 @@ def get_keyboard(cart_item: CartItem):
     return keyboard
 
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
-async def buy_product(call: types.CallbackQuery, session: Session):
+async def buy_product(call: types.CallbackQuery):
+    session = SessionLocal()
     """Обработка покупки продукта."""
     data = call.data.split("_")
     category, product_id = data[1], int(data[2])
@@ -174,7 +164,8 @@ async def buy_product(call: types.CallbackQuery, session: Session):
     await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))
-async def increase_quantity(call: types.CallbackQuery, session: Session):
+async def increase_quantity(call: types.CallbackQuery):
+    session = SessionLocal()
     """Увеличение количества продукта."""
     data = call.data.split("_")
     category, product_id = data[1], int(data[2])
@@ -194,7 +185,8 @@ async def increase_quantity(call: types.CallbackQuery, session: Session):
     await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
 
 @sabad_router.callback_query(lambda call: call.data.startswith("decrease_"))
-async def decrease_quantity(call: types.CallbackQuery, session: Session):
+async def decrease_quantity(call: types.CallbackQuery):
+    session = SessionLocal()
     """Уменьшение количества продукта."""
     data = call.data.split("_")
     category, product_id = data[1], int(data[2])

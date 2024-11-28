@@ -1,7 +1,7 @@
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
-from database.tables import Pizza, Combo, Snacks, Sauces, Desserts, Drinks, Kidslove, OtherGoods, Cart
-from database.db import SessionLocal
+from database.tables import Pizza, Combo, Snacks, Sauces, Desserts, Drinks, Kidslove, OtherGoods
+from database.db import SessionLocal, Cart
 from sqlalchemy.future import select
 from database.tables import Order  # Ба модели худ истинод кунед
 from sqlalchemy.sql import func

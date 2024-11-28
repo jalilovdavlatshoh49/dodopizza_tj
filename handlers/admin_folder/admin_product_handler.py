@@ -139,21 +139,25 @@ class ProductEdit(StatesGroup):
     waiting_for_attribute = State()  # State for attribute selection
     waiting_for_value = State()  # State for value input
 
-# Example callback query handler to check for product editing
 @admin_product_router.callback_query(lambda c: c.data.startswith("edit_"))
 async def edit_product(callback_query: CallbackQuery):
     _, category, productid = callback_query.data.split("_")
 
-    # Ask the user which attribute they want to edit
-    keyboard = InlineKeyboardMarkup(row_width=2)
-    keyboard.add(
-        InlineKeyboardButton("Ном", callback_data=f"edit_{category}_{productid}_name"),
-        InlineKeyboardButton("Тавсиф", callback_data=f"edit_{category}_{productid}_description"),
-        InlineKeyboardButton("Нарх", callback_data=f"edit_{category}_{productid}_price"),
-        InlineKeyboardButton("Тасвир", callback_data=f"edit_{category}_{productid}_image_url")
+    # Эҷоди клавиатура бо истифодаи InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="Ном", callback_data=f"edit_{category}_{productid}_name"),
+        InlineKeyboardButton(text="Тавсиф", callback_data=f"edit_{category}_{productid}_description")
+    )
+    builder.row(
+        InlineKeyboardButton(text="Нарх", callback_data=f"edit_{category}_{productid}_price"),
+        InlineKeyboardButton(text="Тасвир", callback_data=f"edit_{category}_{productid}_imageurl")
     )
 
-    await callback_query.message.answer("Лутфан, интихоб кунед, ки кадом маълумотро мехоҳед иваз кунед:", reply_markup=keyboard)
+    await callback_query.message.answer(
+        "Лутфан, интихоб кунед, ки кадом маълумотро мехоҳед иваз кунед:",
+        reply_markup=builder.as_markup()
+    )
 
 # Handling the attribute selection
 @admin_product_router.callback_query(lambda c: c.data.startswith("edit_") and len(c.data.split("_")) == 4)
@@ -171,7 +175,7 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
         "name": "Лутфан, номи маҳсулотро ворид кунед:",
         "description": "Лутфан, тавсифи маҳсулотро ворид кунед:",
         "price": "Лутфан, нархи маҳсулотро ворид кунед:",
-        "image_url": "Лутфан, URL тасвирро ворид кунед:"
+        "image_url": "Лутфан, тасвирро ирсол кунед:"
     }
     await callback_query.message.answer(messages.get(attribute, "Маълумоти нодуруст!"))
 

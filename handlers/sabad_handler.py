@@ -165,9 +165,17 @@ async def buy_product(call: types.CallbackQuery):
         await cart.add_item(session, category, product_id, quantity=1)
         await session.commit()
 
-        # Отправка клавиатуры
-        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
-        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        # Получение элемента корзины из базы данных
+        result = await session.execute(
+        select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
+    )
+        cart_item = result.scalars().first()
+
+        if cart_item:
+            # Отправка клавиатуры
+            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        else:
+        await call.answer("Элемент не найден", show_alert=True)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))

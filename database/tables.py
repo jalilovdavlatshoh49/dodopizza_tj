@@ -132,31 +132,42 @@ class Order(Base):
         self.latitude = latitude
         self.longitude = longitude
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 class Cart(Base):
     __tablename__ = 'cart'
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(BigInteger, index=True)  # Add this field to link the cart with a user
-    items = relationship("CartItem", back_populates="cart")  # Items in the cart
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Status of the order
+    user_id = Column(BigInteger, index=True)  # Привязка корзины к пользователю
+    items = relationship("CartItem", back_populates="cart")  # Товары в корзине
+    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Статус заказа
     order = relationship("Order", back_populates="cart", uselist=False)
 
-    def add_item(self, product_type, product_id, quantity=1):
-        item = next((item for item in self.items if item.product_type == product_type and item.product_id == product_id), None)
-        if item:
-            item.quantity += quantity  # If the product already exists, increase the quantity
+    async def add_item(self, session: AsyncSession, product_type, product_id, quantity=1):
+        # Поиск существующего товара
+        existing_item = next(
+            (item for item in self.items if item.product_type == product_type and item.product_id == product_id),
+            None
+        )
+        if existing_item:
+            existing_item.quantity += quantity  # Увеличиваем количество
         else:
             new_item = CartItem(product_type=product_type, product_id=product_id, quantity=quantity)
-            self.items.append(new_item)  # Add the new product to the cart
+            self.items.append(new_item)  # Добавляем новый товар
+        await session.flush()  # Сохраняем изменения в сессии
 
-    def remove_item(self, product_type, product_id):
+    async def remove_item(self, session: AsyncSession, product_type, product_id):
         self.items = [item for item in self.items if not (item.product_type == product_type and item.product_id == product_id)]
+        await session.flush()  # Сохраняем изменения в сессии
 
-    def get_total_price(self, session):
+    async def get_total_price(self, session: AsyncSession):
         total_price = 0
         for item in self.items:
-            product_model = globals()[item.product_type.capitalize()]  # Determine the table
-            product = session.query(product_model).filter(product_model.id == item.product_id).first()
+            # Поиск продукта через асинхронный запрос
+            product_model = globals()[item.product_type.capitalize()]  # Определение таблицы
+            result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+            product = result.scalars().first()
             if product:
                 total_price += product.price * item.quantity
         return total_price

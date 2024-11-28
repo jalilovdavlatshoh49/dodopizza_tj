@@ -137,7 +137,22 @@ async def buy_product_callback(query: CallbackQuery):
 
     cart = await get_cart_for_user(user_id)
 
-    product_model = globals()[product_type.capitalize()]
+    product_models = {
+        'pizza': Pizza,
+        'combo': Combo,
+        'snacks': Snacks,
+        'desserts': Desserts,
+        'drinks': Drinks,
+        'sauces': Sauces,
+        'kidslove': Kidslove,
+        'othergoods': OtherGoods
+    }
+
+    product_model = product_models.get(product_type.lower())
+    if not product_model:
+        await query.edit_message_text("Invalid product type.")
+        return
+
     product = await session.execute(select(product_model).filter_by(id=product_id))
     product = product.scalar_one_or_none()
 

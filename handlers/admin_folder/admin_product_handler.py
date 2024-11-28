@@ -134,16 +134,18 @@ async def cancel_delete(callback_query: CallbackQuery):
     await callback_query.answer("Ҳазф бекор карда шуд.")
    
 
+
 # Define the state machine
 class ProductEdit(StatesGroup):
     waiting_for_attribute = State()  # State for attribute selection
     waiting_for_value = State()  # State for value input
 
+# Handler for editing a product
 @admin_product_router.callback_query(lambda c: c.data.startswith("edit_") and len(c.data.split("_")) == 3)
 async def edit_product(callback_query: CallbackQuery):
     _, category, productid = callback_query.data.split("_")
 
-    # Эҷоди клавиатура бо истифодаи InlineKeyboardBuilder
+    # Creating keyboard
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="Ном", callback_data=f"edit_{category}_{productid}_name"),
@@ -151,7 +153,7 @@ async def edit_product(callback_query: CallbackQuery):
     )
     builder.row(
         InlineKeyboardButton(text="Нарх", callback_data=f"edit_{category}_{productid}_price"),
-        InlineKeyboardButton(text="Тасвир", callback_data=f"edit_{category}_{productid}_imageurl")
+        InlineKeyboardButton(text="Тасвир", callback_data=f"edit_{category}_{productid}_image_url")
     )
 
     await callback_query.message.answer(
@@ -168,7 +170,7 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(product_id=product_id, category=category, attribute=attribute)
 
     # Set state to ask for the value
-    await ProductEdit.waiting_for_value.set()
+    await state.set_state(ProductEdit.waiting_for_value)
 
     # Ask for the corresponding value based on the attribute selected
     messages = {
@@ -212,4 +214,4 @@ async def process_value(message: types.Message, state: FSMContext):
             await message.answer("Маҳсулот ёфт нашуд!")
 
     # Finish the FSM process
-    await state.finish()
+    await state.clear()

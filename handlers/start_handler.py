@@ -34,7 +34,7 @@ async def category_handler(callback_query: types.CallbackQuery):
         "desserts": Desserts,
         "drinks": Drinks,
         "sauces": Sauces,
-        "kidslove": Kids_Love,
+        "kidslove": Kidslove,
         "othergoods": OtherGoods
     }
     

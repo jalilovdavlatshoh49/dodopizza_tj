@@ -103,11 +103,20 @@ async def delete_product(callback_query: CallbackQuery):
         else:
             await callback_query.answer("Маҳсулот ёфт нашуд!")
 
-# Callback query барои бекор кардани ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
 async def cancel_delete(callback_query: CallbackQuery):
     try:
-        _, category, product_id = callback_query.data.split("_")
+        # Санҷиши callback_data
+        data_parts = callback_query.data.split("_")
+        if len(data_parts) != 3:
+            await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
+            return
+        
+        _, category, product_id = data_parts
+        if not category or not product_id.isdigit():
+            await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
+            return
+
         # Клавиатураро барои идоракунии маҳсулот месозем
         builder = InlineKeyboardBuilder()
         builder.add(
@@ -128,8 +137,9 @@ async def cancel_delete(callback_query: CallbackQuery):
                 reply_markup=builder.as_markup()
             )
         await callback_query.answer()
-    except ValueError:
-        # Ҳалли хатогии эҳтимолии формат
+    except Exception as e:
+        # Барои дарёфти маълумот оиди хатогӣ
+        print(f"Error: {e}")
         await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
    
 

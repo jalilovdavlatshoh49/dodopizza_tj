@@ -232,7 +232,7 @@ async def process_value(message: types.Message, state: FSMContext):
 
                 await session.commit()
                 exit_builder = InlineKeyboardBuilder()
-        exit_builder.add(
+                exit_builder.add(
             InlineKeyboardButton(
                 text="🔙 Меню",
                 callback_data="exit_to_admin_menu"

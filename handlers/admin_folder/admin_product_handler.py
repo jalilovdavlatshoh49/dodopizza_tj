@@ -235,8 +235,8 @@ async def process_value(message: types.Message, state: FSMContext):
                 query = select(product_model).where(
             product_model.id == int(product_id)
         )
-            result = await session.execute(query)
-            filtered_product = result.scalars().first()
+                result = await session.execute(query)
+                filtered_product = result.scalars().first()
 
         # Ҷавоб додан бо маълумоти гирифташуда
             if filtered_product:

@@ -134,34 +134,39 @@ def get_keyboard(cart_item: CartItem):
     ])
     return keyboard
 
+from sqlalchemy.future import select
+
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
-    session = SessionLocal()
-    """Обработка покупки продукта."""
-    data = call.data.split("_")
-    category, product_id = data[1], int(data[2])
+    async with SessionLocal() as session:
+        """Обработка покупки продукта."""
+        data = call.data.split("_")
+        category, product_id = data[1], int(data[2])
 
-    # Поиск или создание корзины
-    user_id = call.from_user.id
-    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
-    if not cart:
-        cart = Cart(user_id=user_id)
-        session.add(cart)
+        # Поиск или создание корзины
+        user_id = call.from_user.id
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            cart = Cart(user_id=user_id)
+            session.add(cart)
+            await session.commit()
 
-    # Поиск продукта
-    product_model = globals()[category.capitalize()]  # Автоматическое определение модели
-    product = session.query(product_model).filter(product_model.id == product_id).first()
-    if not product:
-        await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
-        return
+        # Поиск продукта
+        product_model = globals()[category.capitalize()]  # Автоматическое определение модели
+        result = await session.execute(select(product_model).filter(product_model.id == product_id))
+        product = result.scalars().first()
+        if not product:
+            await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+            return
 
-    # Добавление продукта в корзину
-    cart.add_item(category, product_id, quantity=1)
-    session.commit()
+        # Добавление продукта в корзину
+        cart.add_item(category, product_id, quantity=1)
+        await session.commit()
 
-    # Отправка клавиатуры
-    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
-    await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        # Отправка клавиатуры
+        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))
 async def increase_quantity(call: types.CallbackQuery):

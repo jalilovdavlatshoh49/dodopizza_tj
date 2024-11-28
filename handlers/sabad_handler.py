@@ -124,7 +124,8 @@ async def get_cart_for_user(user_id):
         await session.commit()
     return cart
 
-# Function to handle "buy product" callback
+
+
 @sabad_router.callback_query(lambda c: c.data and c.data.startswith("buy_"))
 async def buy_product_callback(query: CallbackQuery):
     await query.answer()
@@ -134,47 +135,50 @@ async def buy_product_callback(query: CallbackQuery):
     product_type = callback_data.split("_")[1]
 
     user_id = query.from_user.id
-    session = SessionLocal()
 
-    cart = await get_cart_for_user(user_id)
+    # Ensure AsyncSession is used here
+    async with SessionLocal() as session:  # Use async session context manager
+        cart = await get_cart_for_user(user_id)
 
-    product_models = {
-        'pizza': Pizza,
-        'combo': Combo,
-        'snacks': Snacks,
-        'desserts': Desserts,
-        'drinks': Drinks,
-        'sauces': Sauces,
-        'kidslove': Kidslove,
-        'othergoods': OtherGoods
-    }
+        product_models = {
+            'pizza': Pizza,
+            'combo': Combo,
+            'snacks': Snacks,
+            'desserts': Desserts,
+            'drinks': Drinks,
+            'sauces': Sauces,
+            'kidslove': Kidslove,
+            'othergoods': OtherGoods
+        }
 
-    product_model = product_models.get(product_type.lower())
-    if not product_model:
-        await query.edit_message_text("Invalid product type.")
-        return
+        product_model = product_models.get(product_type.lower())
+        if not product_model:
+            await query.edit_message_text("Invalid product type.")
+            return
 
-    product = await session.execute(select(product_model).filter_by(id=product_id))
-    product = product.scalar_one_or_none()
+        # Execute async query
+        result = await session.execute(select(product_model).filter_by(id=product_id))
+        product = result.scalar_one_or_none()
 
-    if product:
-        cart.add_item(product_type, product_id, quantity=1)
-        await session.commit()
+        if product:
+            # Make sure cart methods are async too
+            await cart.add_item(product_type, product_id, quantity=1)
+            await session.commit()
 
-        buttons = [
-            InlineKeyboardButton(text="➕ Зам", callback_data=f"increase_{product_type}_{product_id}"),
-            InlineKeyboardButton(text="➖ Кам", callback_data=f"decrease_{product_type}_{product_id}"),
-            InlineKeyboardButton(text="❌ Нест", callback_data=f"remove_{product_type}_{product_id}")
-        ]
+            buttons = [
+                InlineKeyboardButton(text="➕ Зам", callback_data=f"increase_{product_type}_{product_id}"),
+                InlineKeyboardButton(text="➖ Кам", callback_data=f"decrease_{product_type}_{product_id}"),
+                InlineKeyboardButton(text="❌ Нест", callback_data=f"remove_{product_type}_{product_id}")
+            ]
 
-        total_price = product.price
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            buttons,
-            [InlineKeyboardButton(text=f"{product.name}: 1 x {product.price} = {total_price} сомони", callback_data="no_action")],
-            [InlineKeyboardButton(text="🛒 Ҳисоби сабад", callback_data="checkout")]
-        ])
+            total_price = product.price
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                buttons,
+                [InlineKeyboardButton(text=f"{product.name}: 1 x {product.price} = {total_price} сомони", callback_data="no_action")],
+                [InlineKeyboardButton(text="🛒 Ҳисоби сабад", callback_data="checkout")]
+            ])
 
-        await query.edit_message_text(text=f"Маҳсулот илова шуд: {product.name}", reply_markup=keyboard)
+            await query.edit_message_text(text=f"Маҳсулот илова шуд: {product.name}", reply_markup=keyboard)
 
 # Function to update cart item
 @sabad_router.callback_query(lambda c: c.data and c.data.startswith(("increase_", "decrease_", "remove_")))

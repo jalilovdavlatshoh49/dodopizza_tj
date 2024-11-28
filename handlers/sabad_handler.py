@@ -115,14 +115,14 @@ async def show_cart(target, user_id: int):
 
 # Helper function to get the user's cart
 async def get_cart_for_user(user_id):
-    session = SessionLocal()
-    cart = await session.execute(select(Cart).filter(Cart.user_id == user_id, Cart.status == "pending"))
-    cart = cart.scalar_one_or_none()
-    if not cart:
-        cart = Cart(user_id=user_id)
-        session.add(cart)
-        await session.commit()
-    return cart
+    async with SessionLocal() as session:  # Use async session context manager
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id, Cart.status == "pending"))
+        cart = result.scalar_one_or_none()
+        if not cart:
+            cart = Cart(user_id=user_id)
+            session.add(cart)
+            await session.commit()
+        return cart
 
 
 
@@ -138,6 +138,7 @@ async def buy_product_callback(query: CallbackQuery):
 
     # Ensure AsyncSession is used here
     async with SessionLocal() as session:  # Use async session context manager
+        # Retrieve the cart within the session context
         cart = await get_cart_for_user(user_id)
 
         product_models = {
@@ -156,13 +157,13 @@ async def buy_product_callback(query: CallbackQuery):
             await query.edit_message_text("Invalid product type.")
             return
 
-        # Execute async query
+        # Execute async query to fetch product
         result = await session.execute(select(product_model).filter_by(id=product_id))
         product = result.scalar_one_or_none()
 
         if product:
-            # Make sure cart methods are async too
-            await cart.add_item(product_type, product_id, quantity=1)
+            # Add item to cart and ensure methods are async
+            await cart.add_item(product_type, product_id, quantity=1)  # Make sure this method is async
             await session.commit()
 
             buttons = [

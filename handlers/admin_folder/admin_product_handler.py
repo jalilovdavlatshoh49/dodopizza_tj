@@ -8,6 +8,9 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
 from database.tables import *
+from aiogram.filters import Text, Photo
+from aiogram.dispatcher.filters.state import StateFilter
+
 
 # Router setup for admin product handling
 admin_product_router = Router()
@@ -199,8 +202,12 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
     }
     await callback_query.message.answer(messages.get(attribute, "Маълумоти нодуруст!"))
 
+
+
+admin_product_router = Router()
+
 # Handling value input (name, description, price, image_url)
-@admin_product_router.message(ProductEdit.waiting_for_value, content_types=[ContentType.TEXT, ContentType.PHOTO])
+@admin_product_router.message(StateFilter(ProductEdit.waiting_for_value), Text() | Photo())
 async def process_value(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     product_id = user_data['product_id']
@@ -224,9 +231,7 @@ async def process_value(message: types.Message, state: FSMContext):
                 elif attribute == "image_url" and message.photo:
                     # Downloading the photo
                     photo = message.photo[-1]
-                    file_path = await message.bot.get_file(photo.file_id)
-                    file_url = f"https://api.telegram.org/file/bot{message.bot.token}/{file_path.file_path}"
-                    product.image_url = file_url
+                    product.image_url = photo.file_id
 
                 await session.commit()
                 await message.answer(f"Маълумоти {attribute} иваз шуд.")

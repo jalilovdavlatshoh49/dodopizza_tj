@@ -1,6 +1,7 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.state import State, StatesGroup
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,15 +11,17 @@ from database.tables import *
 # Router setup for admin product handling
 admin_product_router = Router()
 
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 
 # Callback query-ро коркард мекунем
 @admin_product_router.callback_query(lambda c: c.data.startswith("admin_category_"))
 async def handle_category(callback_query: CallbackQuery):
     category = callback_query.data.split("_")[-1]
+    product_model = globals().get(category.capitalize())
+    if not product_model:
+        await callback_query.answer("Категорияи нодуруст.", show_alert=True)
+        return
 
-    # Модели мувофиқро муайян мекунем
-    product_model = globals()[category.capitalize()]
     async with SessionLocal() as session:
         query = select(product_model)
         result = await session.execute(query)
@@ -35,60 +38,60 @@ async def handle_category(callback_query: CallbackQuery):
                 f"💵 Нархи: {product.price} сомонӣ\n"
             )
 
-            # Клавиатураро барои идоракунии маҳсулот месозем
             builder = InlineKeyboardBuilder()
             builder.add(
                 InlineKeyboardButton(
-                    text=f"✏️ Иваз",
+                    text="✏️ Иваз",
                     callback_data=f"edit_{category}_{product.id}"
                 )
             )
             builder.add(
                 InlineKeyboardButton(
-                    text=f"❌ Ҳазф",
+                    text="❌ Ҳазф",
                     callback_data=f"delete_{category}_{product.id}"
                 )
             )
 
-            # Ирсоли тасвир бо матн ва клавиатура
             await callback_query.message.answer_photo(
                 photo=product.image_url,
                 caption=product_text,
                 reply_markup=builder.as_markup()
             )
-            
- 
+
 
 # Callback query барои оғози тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))
 async def confirm_delete_product(callback_query: CallbackQuery):
-    _, category, productid = callback_query.data.split("_")
+    _, category, product_id = callback_query.data.split("_")
 
-    # Паёми тасдиқ бо клавиатураи "Ҳа" ва "Не"
     builder = InlineKeyboardBuilder()
     builder.add(
         InlineKeyboardButton(
-            text="✅ Ҳафз кардан",
-            callback_data=f"confirm_delete_{category}_{productid}"
+            text="✅ Ҳазф кардан",
+            callback_data=f"confirm_delete_{category}_{product_id}"
         )
     )
     builder.add(
         InlineKeyboardButton(
-            text="❌ Ҳафз накардан",
-            callback_data=f"cancel_delete_{category}_{productid}"
+            text="❌ Ҳазф накардан",
+            callback_data=f"cancel_delete_{category}_{product_id}"
         )
     )
     await callback_query.message.edit_reply_markup(
-    reply_markup=builder.as_markup()
-)
+        reply_markup=builder.as_markup()
+    )
     await callback_query.answer()
 
 
 # Callback query барои тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
 async def delete_product(callback_query: CallbackQuery):
-    _, category, productid = callback_query.data.split("_")
-    product_model = globals()[category.capitalize()]
+    _, category, product_id = callback_query.data.split("_")
+    product_model = globals().get(category.capitalize())
+    if not product_model:
+        await callback_query.answer("Категорияи нодуруст.", show_alert=True)
+        return
+
     async with SessionLocal() as session:
         query = select(product_model).filter(product_model.id == int(product_id))
         result = await session.execute(query)
@@ -99,48 +102,34 @@ async def delete_product(callback_query: CallbackQuery):
             await session.commit()
             await callback_query.message.answer("Маҳсулот бо муваффақият ҳазф шуд.")
             await callback_query.message.delete()
-            await callback_query.answer()
         else:
-            await callback_query.answer("Маҳсулот ёфт нашуд!")
+            await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
 
+
+# Callback query барои рад кардани ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
 async def cancel_delete(callback_query: CallbackQuery):
-    try:
-        # Санҷиши callback_data
-        data_parts = callback_query.data.split("_")
-        if len(data_parts) != 3:
-            await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
-            return
-        
-        _, category, product_id = data_parts
-        if not category or not product_id.isdigit():
-            await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
-            return
+    _, category, product_id = callback_query.data.split("_")
 
-        # Клавиатураро барои идоракунии маҳсулот месозем
-        builder = InlineKeyboardBuilder()
-        builder.add(
-            InlineKeyboardButton(
-                text="✏️ Иваз",
-                callback_data=f"edit_{category}_{productid}"
-            )
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        InlineKeyboardButton(
+            text="✏️ Иваз",
+            callback_data=f"edit_{category}_{product_id}"
         )
-        builder.add(
-            InlineKeyboardButton(
-                text="❌ Ҳазф",
-                callback_data=f"delete_{category}_{productid}"
-            )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="❌ Ҳазф",
+            callback_data=f"delete_{category}_{product_id}"
         )
-        # Тағйир додани клавиатураи ҷавоб
-        if callback_query.message:
-            await callback_query.message.edit_reply_markup(
-                reply_markup=builder.as_markup()
-            )
-        await callback_query.answer()
-    except Exception as e:
-        # Барои дарёфти маълумот оиди хатогӣ
-        print(f"Error: {e}")
-        await callback_query.answer("Маълумоти нодуруст.", show_alert=True)
+    )
+
+    if callback_query.message:
+        await callback_query.message.edit_reply_markup(
+            reply_markup=builder.as_markup()
+        )
+    await callback_query.answer("Ҳазф бекор карда шуд.")
    
 
 # Define the state machine

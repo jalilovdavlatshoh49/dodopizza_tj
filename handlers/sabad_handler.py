@@ -133,9 +133,9 @@ async def buy_product_callback(query: CallbackQuery):
     product_type = callback_data.split("_")[1]
 
     user_id = query.from_user.id
-    session: AsyncSession = query.bot['session']
+    session = SessionLocal()
 
-    cart = await get_cart_for_user(user_id, session)
+    cart = await get_cart_for_user(user_id)
 
     product_model = globals()[product_type.capitalize()]
     product = await session.execute(select(product_model).filter_by(id=product_id))

@@ -206,7 +206,7 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
 admin_product_router = Router()
 
 # Handling value input (name, description, price, image_url)
-@admin_product_router.message(StateFilter(ProductEdit.waiting_for_value))
+@admin_product_router.message(ProductEdit.waiting_for_value)
 async def process_value(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     product_id = user_data['product_id']

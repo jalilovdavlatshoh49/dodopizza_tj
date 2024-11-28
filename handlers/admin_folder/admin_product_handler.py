@@ -62,20 +62,20 @@ async def handle_category(callback_query: CallbackQuery):
 # Callback query барои оғози тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("delete_"))
 async def confirm_delete_product(callback_query: CallbackQuery):
-    _, category, product_id = callback_query.data.split("_")
+    _, category, productid = callback_query.data.split("_")
 
     # Паёми тасдиқ бо клавиатураи "Ҳа" ва "Не"
     builder = InlineKeyboardBuilder()
     builder.add(
         InlineKeyboardButton(
             text="✅ Ҳафз кардан",
-            callback_data=f"confirm_delete_{category}_{product_id}"
+            callback_data=f"confirm_delete_{category}_{productid}"
         )
     )
     builder.add(
         InlineKeyboardButton(
             text="❌ Ҳафз накардан",
-            callback_data=f"cancel_delete_{category}_{product_id}"
+            callback_data=f"cancel_delete_{category}_{productid}"
         )
     )
     await callback_query.message.edit_reply_markup(
@@ -87,7 +87,7 @@ async def confirm_delete_product(callback_query: CallbackQuery):
 # Callback query барои тасдиқи ҳазф
 @admin_product_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
 async def delete_product(callback_query: CallbackQuery):
-    _, category, product_id = callback_query.data.split("_")
+    _, category, productid = callback_query.data.split("_")
     product_model = globals()[category.capitalize()]
     async with SessionLocal() as session:
         query = select(product_model).filter(product_model.id == int(product_id))
@@ -122,13 +122,13 @@ async def cancel_delete(callback_query: CallbackQuery):
         builder.add(
             InlineKeyboardButton(
                 text="✏️ Иваз",
-                callback_data=f"edit_{category}_{product_id}"
+                callback_data=f"edit_{category}_{productid}"
             )
         )
         builder.add(
             InlineKeyboardButton(
                 text="❌ Ҳазф",
-                callback_data=f"delete_{category}_{product_id}"
+                callback_data=f"delete_{category}_{productid}"
             )
         )
         # Тағйир додани клавиатураи ҷавоб
@@ -151,15 +151,15 @@ class ProductEdit(StatesGroup):
 # Example callback query handler to check for product editing
 @admin_product_router.callback_query(lambda c: c.data.startswith("edit_"))
 async def edit_product(callback_query: CallbackQuery):
-    _, category, product_id = callback_query.data.split("_")
+    _, category, productid = callback_query.data.split("_")
 
     # Ask the user which attribute they want to edit
     keyboard = InlineKeyboardMarkup(row_width=2)
     keyboard.add(
-        InlineKeyboardButton("Ном", callback_data=f"edit_{category}_{product_id}_name"),
-        InlineKeyboardButton("Тавсиф", callback_data=f"edit_{category}_{product_id}_description"),
-        InlineKeyboardButton("Нарх", callback_data=f"edit_{category}_{product_id}_price"),
-        InlineKeyboardButton("Тасвир", callback_data=f"edit_{category}_{product_id}_image_url")
+        InlineKeyboardButton("Ном", callback_data=f"edit_{category}_{productid}_name"),
+        InlineKeyboardButton("Тавсиф", callback_data=f"edit_{category}_{productid}_description"),
+        InlineKeyboardButton("Нарх", callback_data=f"edit_{category}_{productid}_price"),
+        InlineKeyboardButton("Тасвир", callback_data=f"edit_{category}_{productid}_image_url")
     )
 
     await callback_query.message.answer("Лутфан, интихоб кунед, ки кадом маълумотро мехоҳед иваз кунед:", reply_markup=keyboard)

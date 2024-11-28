@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import enum
 from sqlalchemy import Float
+from database.db import SessionLocal 
+from sqlalchemy.future import select
 Base = declarative_base()
 
 
@@ -132,8 +134,7 @@ class Order(Base):
         self.latitude = latitude
         self.longitude = longitude
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+
 
 class Cart(Base):
     __tablename__ = 'cart'
@@ -144,7 +145,8 @@ class Cart(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Статус заказа
     order = relationship("Order", back_populates="cart", uselist=False)
 
-    async def add_item(self, session: AsyncSession, product_type, product_id, quantity=1):
+    async def add_item(self, product_type, product_id, quantity=1):
+        session = SessionLocal()
         # Поиск существующего товара
         existing_item = next(
             (item for item in self.items if item.product_type == product_type and item.product_id == product_id),
@@ -157,11 +159,13 @@ class Cart(Base):
             self.items.append(new_item)  # Добавляем новый товар
         await session.flush()  # Сохраняем изменения в сессии
 
-    async def remove_item(self, session: AsyncSession, product_type, product_id):
+    async def remove_item(self, product_type, product_id):
+        session = SessionLocal()
         self.items = [item for item in self.items if not (item.product_type == product_type and item.product_id == product_id)]
         await session.flush()  # Сохраняем изменения в сессии
 
-    async def get_total_price(self, session: AsyncSession):
+    async def get_total_price(self):
+        session = SessionLocal()
         total_price = 0
         for item in self.items:
             # Поиск продукта через асинхронный запрос

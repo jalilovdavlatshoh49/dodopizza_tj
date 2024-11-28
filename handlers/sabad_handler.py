@@ -113,105 +113,117 @@ async def show_cart(target, user_id: int):
             )
 
 
-# Helper function to get the user's cart
-async def get_cart_for_user(user_id):
-    async with SessionLocal() as session:  # Use async session context manager
-        result = await session.execute(select(Cart).filter(Cart.user_id == user_id, Cart.status == "pending"))
-        cart = result.scalar_one_or_none()
-        if not cart:
-            cart = Cart(user_id=user_id)
-            session.add(cart)
-            await session.commit()
-        return cart
+from aiogram import Router, types
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from sqlalchemy.orm import Session
+from models import Cart, CartItem, Pizza  # Моделҳоро ворид кунед
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+# Танзимоти SQLAlchemy
+DATABASE_URL = "sqlite:///your_database.db"  # URL-и базаи маълумотҳо
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+sabad_router = Router()
 
-@sabad_router.callback_query(lambda c: c.data and c.data.startswith("buy_"))
-async def buy_product_callback(query: CallbackQuery):
-    await query.answer()
+def get_keyboard(cart_item: CartItem):
+    """Сохтани клавиатураи динамикӣ барои маҳсулот."""
+    quantity = cart_item.quantity
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="-", callback_data=f"decrease_{cart_item.product_type}_{cart_item.product_id}"),
+            InlineKeyboardButton(text=f"{quantity} дона", callback_data="noop"),
+            InlineKeyboardButton(text="+", callback_data=f"increase_{cart_item.product_type}_{cart_item.product_id}")
+        ],
+        [
+            InlineKeyboardButton(
+                text=f"Карзина ({cart_item.quantity * cart_item.price} сомонӣ)",
+                callback_data="view_cart"
+            )
+        ]
+    ])
+    return keyboard
 
-    callback_data = query.data
-    product_id = int(callback_data.split("_")[2])
-    product_type = callback_data.split("_")[1]
+@sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
+async def buy_product(call: types.CallbackQuery, session: Session):
+    """Обработка покупки продукта."""
+    data = call.data.split("_")
+    category, product_id = data[1], int(data[2])
 
-    user_id = query.from_user.id
+    # Поиск или создание корзины
+    user_id = call.from_user.id
+    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        cart = Cart(user_id=user_id)
+        session.add(cart)
 
-    # Ensure AsyncSession is used here
-    async with SessionLocal() as session:  # Use async session context manager
-        # Retrieve the cart within the session context
-        cart = await get_cart_for_user(user_id)
-
-        product_models = {
-            'pizza': Pizza,
-            'combo': Combo,
-            'snacks': Snacks,
-            'desserts': Desserts,
-            'drinks': Drinks,
-            'sauces': Sauces,
-            'kidslove': Kidslove,
-            'othergoods': OtherGoods
-        }
-
-        product_model = product_models.get(product_type.lower())
-        if not product_model:
-            await query.edit_message_text("Invalid product type.")
-            return
-
-        # Execute async query to fetch product
-        result = await session.execute(select(product_model).filter_by(id=product_id))
-        product = result.scalar_one_or_none()
-
-        if product:
-            # Add item to cart and ensure methods are async
-            await cart.add_item(product_type, product_id, quantity=1)  # Make sure this method is async
-            await session.commit()
-
-            buttons = [
-                InlineKeyboardButton(text="➕ Зам", callback_data=f"increase_{product_type}_{product_id}"),
-                InlineKeyboardButton(text="➖ Кам", callback_data=f"decrease_{product_type}_{product_id}"),
-                InlineKeyboardButton(text="❌ Нест", callback_data=f"remove_{product_type}_{product_id}")
-            ]
-
-            total_price = product.price
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                buttons,
-                [InlineKeyboardButton(text=f"{product.name}: 1 x {product.price} = {total_price} сомони", callback_data="no_action")],
-                [InlineKeyboardButton(text="🛒 Ҳисоби сабад", callback_data="checkout")]
-            ])
-
-            await query.edit_message_text(text=f"Маҳсулот илова шуд: {product.name}", reply_markup=keyboard)
-
-# Function to update cart item
-@sabad_router.callback_query(lambda c: c.data and c.data.startswith(("increase_", "decrease_", "remove_")))
-async def update_cart_item(query: CallbackQuery):
-    await query.answer()
-
-    callback_data = query.data
-    action, product_type, product_id = callback_data.split("_")
-
-    user_id = query.from_user.id
-    session = SessionLocal()
-
-    cart = await get_cart_for_user(user_id)
-    cart_item = await session.execute(select(CartItem).filter(
-        CartItem.cart == cart, 
-        CartItem.product_type == product_type, 
-        CartItem.product_id == int(product_id)
-    ))
-    cart_item = cart_item.scalar_one_or_none()
-
-    if action == 'increase':
-        cart_item.quantity += 1
-    elif action == 'decrease' and cart_item.quantity > 1:
-        cart_item.quantity -= 1
-    elif action == 'remove':
-        cart.remove_item(product_type, int(product_id))
-        await session.commit()
-        await query.edit_message_text(text="Маҳсулот аз сабад хориҷ шуд.", reply_markup=await create_cart_keyboard(cart))
+    # Поиск продукта
+    product_model = globals()[category.capitalize()]  # Автоматическое определение модели
+    product = session.query(product_model).filter(product_model.id == product_id).first()
+    if not product:
+        await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
         return
 
-    await session.commit()
-    await query.edit_message_text(text="Сабади шумо:", reply_markup=await create_cart_keyboard(cart))
+    # Добавление продукта в корзину
+    cart.add_item(category, product_id, quantity=1)
+    session.commit()
+
+    # Отправка клавиатуры
+    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+    await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+
+@sabad_router.callback_query(lambda call: call.data.startswith("increase_"))
+async def increase_quantity(call: types.CallbackQuery, session: Session):
+    """Увеличение количества продукта."""
+    data = call.data.split("_")
+    category, product_id = data[1], int(data[2])
+
+    # Поиск корзины и товара
+    user_id = call.from_user.id
+    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        await call.answer("Корзина холӣ аст!", show_alert=True)
+        return
+
+    cart.add_item(category, product_id, quantity=1)
+    session.commit()
+
+    # Обновление клавиатуры
+    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+    await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+
+@sabad_router.callback_query(lambda call: call.data.startswith("decrease_"))
+async def decrease_quantity(call: types.CallbackQuery, session: Session):
+    """Уменьшение количества продукта."""
+    data = call.data.split("_")
+    category, product_id = data[1], int(data[2])
+
+    # Поиск корзины и товара
+    user_id = call.from_user.id
+    cart = session.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        await call.answer("Корзина холӣ аст!", show_alert=True)
+        return
+
+    cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+    if cart_item.quantity > 1:
+        cart_item.quantity -= 1
+    else:
+        cart.remove_item(category, product_id)
+
+    session.commit()
+
+    # Обновление клавиатуры
+    if cart_item.quantity > 0:
+        await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+    else:
+        await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text=f"Харид {cart_item.price} сомонӣ",
+                                     callback_data=f"buy_{category}_{product_id}")
+            ]
+        ]))
 
 
 

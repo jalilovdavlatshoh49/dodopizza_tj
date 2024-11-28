@@ -30,6 +30,7 @@ async def handle_category(callback_query: CallbackQuery):
         if not products:
             await callback_query.message.answer("Дар ин категория маҳсулоте вуҷуд надорад.")
             return
+        await callback_query.message.delete()
 
         for product in products:
             product_text = (
@@ -52,7 +53,6 @@ async def handle_category(callback_query: CallbackQuery):
                 )
             )
 
-            await callback_query.message.delete()
 
             await callback_query.message.answer_photo(
                 photo=product.image_url,

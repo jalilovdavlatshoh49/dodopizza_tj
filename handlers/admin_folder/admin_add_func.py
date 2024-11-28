@@ -169,10 +169,11 @@ async def get_image_url(message: types.Message, state: FSMContext):
         text="🔙 Ба қафо",
         callback_data="exit_to_admin_menu"
     ),
-    row=1  # Тугмаи "Ба қафо" дар қатор алоҳида хоҳад буд
 )
 
-
+            # Ҷудо кардани тугмаҳо ба қаторҳо
+            keyboard = builder.adjust(2, 1).as_markup()  
+# 2 тугма дар қатор аввал, 1 тугма дар қатор дуюм
             await message.answer_photo(
                 photo=filtered_product.image_url,
                 caption=(
@@ -181,7 +182,7 @@ async def get_image_url(message: types.Message, state: FSMContext):
                     f"<b>Тавсиф:</b> {filtered_product.description}\n"
                     f"<b>Нарх:</b> {filtered_product.price} сомонӣ"
                 ),
-                reply_markup=builder.as_markup(),
+                reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
         else:

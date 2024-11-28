@@ -158,6 +158,12 @@ async def get_image_url(message: types.Message, state: FSMContext):
                     callback_data=f"delete_{category}_{filtered_product.id}"
                 )
             )
+            builder.add(
+            InlineKeyboardButton(
+                text="🔙 Ба қафо",
+                callback_data="exit_to_admin_menu"
+            )
+        )
 
 
             await message.answer_photo(

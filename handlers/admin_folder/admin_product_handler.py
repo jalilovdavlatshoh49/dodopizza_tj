@@ -173,7 +173,7 @@ async def edit_product(callback_query: CallbackQuery):
     )
     builder.row(
         InlineKeyboardButton(text="Нарх", callback_data=f"edit_{category}_{productid}_price"),
-        InlineKeyboardButton(text="Тасвир", callback_data=f"edit_{category}_{productid}_image_url")
+        InlineKeyboardButton(text="Тасвир", callback_data=f"edit_{category}_{productid}_imageurl")
     )
 
     await callback_query.message.answer(
@@ -197,7 +197,7 @@ async def choose_attribute(callback_query: CallbackQuery, state: FSMContext):
         "name": "Лутфан, номи маҳсулотро ворид кунед:",
         "description": "Лутфан, тавсифи маҳсулотро ворид кунед:",
         "price": "Лутфан, нархи маҳсулотро ворид кунед:",
-        "image_url": "Лутфан, тасвирро ирсол кунед:"
+        "imageurl": "Лутфан, тасвирро ирсол кунед:"
     }
     await callback_query.message.answer(messages.get(attribute, "Маълумоти нодуруст!"))
 
@@ -225,7 +225,7 @@ async def process_value(message: types.Message, state: FSMContext):
                     product.description = message.text
                 elif attribute == "price":
                     product.price = int(message.text)
-                elif attribute == "image_url" and message.photo:
+                elif attribute == "imageurl" and message.photo:
                     # Downloading the photo
                     photo = message.photo[-1]
                     product.image_url = photo.file_id

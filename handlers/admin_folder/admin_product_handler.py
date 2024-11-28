@@ -75,7 +75,7 @@ async def confirm_delete_product(callback_query: CallbackQuery):
     builder.add(
         InlineKeyboardButton(
             text="❌ Ҳафз накардан",
-            callback_data="cancel_delete"
+            callback_data=f"cancel_delete_{category}_{product_id}"
         )
     )
     await callback_query.message.edit_reply_markup(
@@ -105,20 +105,21 @@ async def delete_product(callback_query: CallbackQuery):
 
 
 # Callback query барои бекор кардани ҳазф
-@admin_product_router.callback_query(lambda c: c.data == "cancel_delete")
+@admin_product_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
 async def cancel_delete(callback_query: CallbackQuery):
+    _, category, product_id = callback_query.data.split("_")
     # Клавиатураро барои идоракунии маҳсулот месозем
             builder = InlineKeyboardBuilder()
             builder.add(
                 InlineKeyboardButton(
                     text=f"✏️ Иваз",
-                    callback_data=f"edit_{category}_{product.id}"
+                    callback_data=f"edit_{category}_{product_id}"
                 )
             )
             builder.add(
                 InlineKeyboardButton(
                     text=f"❌ Ҳазф",
-                    callback_data=f"delete_{category}_{product.id}"
+                    callback_data=f"delete_{category}_{product_id}"
                 )
             )
             await callback_query.message.edit_reply_markup(

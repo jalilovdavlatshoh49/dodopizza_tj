@@ -231,7 +231,14 @@ async def process_value(message: types.Message, state: FSMContext):
                     product.image_url = photo.file_id
 
                 await session.commit()
-                await message.answer(f"Маълумоти {attribute} иваз шуд.")
+                exit_builder = InlineKeyboardBuilder()
+        exit_builder.add(
+            InlineKeyboardButton(
+                text="🔙 Меню",
+                callback_data="exit_to_admin_menu"
+            )
+        )
+                await message.answer(f"Маълумот иваз шуд.", reply_markup=exit_builder.as_markup())
             except Exception as e:
                 await message.answer(f"Хатогӣ: {e}")
         else:

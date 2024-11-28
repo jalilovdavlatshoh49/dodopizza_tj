@@ -3,7 +3,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.filters import Command
 from sqlalchemy.future import select
 from database.tables import Cart, CartItem  # Импорт кардани моделҳо
-from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
 sabad_router = Router()
 
@@ -34,7 +33,8 @@ async def create_cart_keyboard(cart):
     
 
 # Функсияи ёрирасон барои гирифтани маҳсулотҳо аз сабад
-async def get_cart_items(session: AsyncSession, user_id: int):
+async def get_cart_items(user_id: int):
+    session = SessionLocal()
     query = await session.execute(
         select(CartItem, Cart)
         .join(Cart)
@@ -169,9 +169,9 @@ async def update_cart_item(query: CallbackQuery):
     action, product_type, product_id = callback_data.split("_")
 
     user_id = query.from_user.id
-    session: AsyncSession = query.bot['session']
+    session = SessionLocal()
 
-    cart = await get_cart_for_user(user_id, session)
+    cart = await get_cart_for_user(user_id)
     cart_item = await session.execute(select(CartItem).filter(
         CartItem.cart == cart, 
         CartItem.product_type == product_type, 
@@ -196,7 +196,8 @@ async def update_cart_item(query: CallbackQuery):
 
 # Ҳендлер барои командаи /cart
 @sabad_router.message(Command("cart"))
-async def show_cart(message: types.Message, session: AsyncSession):
+async def show_cart(message: types.Message):
+    session = SessionLocal()
     user_id = message.from_user.id
     cart_items = await get_cart_items(session, user_id)
 
@@ -226,7 +227,8 @@ async def show_cart(message: types.Message, session: AsyncSession):
 
 # Callback ҳендлерҳо барои идоракунии миқдор
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:add_"))
-async def add_item(callback_query: CallbackQuery, session: AsyncSession):
+async def add_item(callback_query: CallbackQuery):
+    session = SessionLocal()
     item_id = int(callback_query.data.split("_")[1])
     cart_item = await session.get(CartItem, item_id)
     if cart_item:
@@ -236,7 +238,8 @@ async def add_item(callback_query: CallbackQuery, session: AsyncSession):
         await show_cart(callback_query.message, session)
 
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:remove_"))
-async def remove_item(callback_query: CallbackQuery, session: AsyncSession):
+async def remove_item(callback_query: CallbackQuery):
+    session = SessionLocal()
     item_id = int(callback_query.data.split("_")[1])
     cart_item = await session.get(CartItem, item_id)
     if cart_item and cart_item.quantity > 1:
@@ -248,7 +251,8 @@ async def remove_item(callback_query: CallbackQuery, session: AsyncSession):
         await callback_query.answer("Миқдорро кам кардан мумкин нест!")
 
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:delete_"))
-async def delete_item(callback_query: CallbackQuery, session: AsyncSession):
+async def delete_item(callback_query: CallbackQuery):
+    session = SessionLocal()
     item_id = int(callback_query.data.split("_")[1])
     cart_item = await session.get(CartItem, item_id)
     if cart_item:

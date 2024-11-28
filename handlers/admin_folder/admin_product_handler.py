@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.state import State, StatesGroup
 from aiogram.types import ContentType
 from sqlalchemy.future import select
+from aiogram.enums import ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import SessionLocal
 from database.tables import *

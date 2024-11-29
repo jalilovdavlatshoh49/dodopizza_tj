@@ -25,6 +25,7 @@ class Cart(Base):
     user_id = Column(BigInteger, index=True)  # ID-и корбар
     items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")  # Предметҳои сабад
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Статуси сабад
+    order = relationship("Order", back_populates="cart", uselist=False)
 
     async def add_item(self, product_type: str, product_id: int, quantity: int = 1):
         session = SessionLocal()

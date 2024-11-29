@@ -174,8 +174,9 @@ async def buy_product(call: types.CallbackQuery):
         cart_item = result.scalars().first()
 
         if cart_item:
+            keyboard = await get_keyboard(cart_item)
             # Отправка клавиатуры
-            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+            await call.message.edit_reply_markup(reply_markup=keyboard)
         else:
             await call.answer("Элемент не найден", show_alert=True)
 
@@ -206,7 +207,8 @@ async def increase_quantity(call: types.CallbackQuery):
             cart_item = result.scalars().first()  # Истифодаи first ба ҷои next
 
         if cart_item:
-            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+            keyboard = await get_keyboard(cart_item)
+            await call.message.edit_reply_markup(reply_markup=keyboard)
         else:
             await call.answer("Маҳсулоти дархостшуда ёфт нашуд!", show_alert=True)
 

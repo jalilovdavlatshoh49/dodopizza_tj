@@ -115,9 +115,11 @@ async def show_cart(target, user_id: int):
 
 
 
-def get_keyboard(cart_item: CartItem):
+async def get_keyboard(cart_item: CartItem):
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
     quantity = cart_item.quantity
+    price = await cart_item.get_price()  # Get the price using the async method
+    total_price = price * quantity  # Calculate total price
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="-", callback_data=f"decrease_{cart_item.product_type}_{cart_item.product_id}"),
@@ -126,7 +128,7 @@ def get_keyboard(cart_item: CartItem):
         ],
         [
             InlineKeyboardButton(
-                text=f"Карзина ({cart_item.quantity * cart_item.price} сомонӣ)",
+                text=f"Карзина ({total_price} сомонӣ)",
                 callback_data="view_cart"
             )
         ]

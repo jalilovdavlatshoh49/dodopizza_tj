@@ -215,47 +215,60 @@ async def increase_quantity(call: types.CallbackQuery):
 
 @sabad_router.callback_query(lambda call: call.data.startswith("decrease_"))
 async def decrease_quantity(call: types.CallbackQuery):
-    async with SessionLocal() as session:
-        """Уменьшение количества продукта."""
-        data = call.data.split("_")
-        category, product_id = data[1], int(data[2])
+    """Уменьшение количества продукта."""
+    data = call.data.split("_")
+    category, product_id = data[1], int(data[2])
 
-        # Поиск корзины и товара
+    async with SessionLocal() as session:
         user_id = call.from_user.id
+
+        # Поиск корзины пользователя
         result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
         cart = result.scalars().first()
         if not cart:
             await call.answer("Корзина холӣ аст!", show_alert=True)
             return
 
+        # Поиск товара в корзине
         result = await session.execute(
-        select(CartItem).filter(CartItem.product_type == category, CartItem.product_id == product_id)
-    )
-    
-    # Бозгашти натиҷа, агар бошад
-    cart_item = result.scalars().first(
+            select(CartItem).filter(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == category,
+                CartItem.product_id == product_id
+            )
+        )
+        cart_item = result.scalars().first()
+        if not cart_item:
+            await call.answer("Маҳсулот дар сабад нест!", show_alert=True)
+            return
+
+        # Уменьшение количества или удаление товара
         if cart_item.quantity > 1:
             cart_item.quantity -= 1
         else:
-            await cart.remove_item(category, product_id)
+            session.delete(cart_item)
 
+        # Сохранение изменений
         await session.commit()
 
-        async with session.begin():
-            result = await session.execute(
-            select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
+        # Проверка оставшихся товаров и обновление интерфейса
+        result = await session.execute(
+            select(CartItem).filter(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == category,
+                CartItem.product_id == product_id
+            )
         )
-            cart_item = result.scalars().first(
+        updated_cart_item = result.scalars().first()
 
-        if cart_items:
-        # Барои гирифтани аввалин мувофиқ, агар чизи мувофиқ ёфта шавад
-            cart_item = cart_items[0]
-            await call.message.edit_reply_markup(reply_markup=get_keyboard(cart_item))
+        if updated_cart_item:
+            # Обновление клавиатуры для измененного товара
+            await call.message.edit_reply_markup(reply_markup=get_keyboard(updated_cart_item))
         else:
+            # Если товара нет, показать кнопку "Харид"
             await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [
-                    InlineKeyboardButton(text=f"Харид {product.price} сомонӣ",
-                                         callback_data=f"buy_{category}_{product_id}")
+                    InlineKeyboardButton(text="Харид", callback_data=f"buy_{category}_{product_id}")
                 ]
             ]))
 

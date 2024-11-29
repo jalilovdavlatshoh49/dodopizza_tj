@@ -233,7 +233,7 @@ async def decrease_quantity(call: types.CallbackQuery):
     )
     
     # Бозгашти натиҷа, агар бошад
-    cart_items = result.scalars().all()
+    cart_item = result.scalars().first(
         if cart_item.quantity > 1:
             cart_item.quantity -= 1
         else:
@@ -245,7 +245,7 @@ async def decrease_quantity(call: types.CallbackQuery):
             result = await session.execute(
             select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
         )
-            cart_items = result.scalars().all()
+            cart_item = result.scalars().first(
 
         if cart_items:
         # Барои гирифтани аввалин мувофиқ, агар чизи мувофиқ ёфта шавад

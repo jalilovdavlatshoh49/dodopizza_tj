@@ -2,7 +2,7 @@ from aiogram import types, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery 
 from aiogram.filters import Command
 from sqlalchemy.future import select
-from database.db import SessionLocal, Cart
+from database.db import SessionLocal, Cart, CartItem
 from database.tables import *
 sabad_router = Router()
 

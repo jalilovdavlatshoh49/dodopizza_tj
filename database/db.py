@@ -50,7 +50,6 @@ class Order(Base):
         self.longitude = longitude
 
 
-# Модели сабад
 class Cart(Base):
     __tablename__ = 'cart'
 
@@ -60,8 +59,7 @@ class Cart(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Статуси сабад
     order = relationship("Order", back_populates="cart", uselist=False)
 
-    async def add_item(self, product_type: str, product_id: int, quantity: int = 1):
-        session = SessionLocal()
+    async def add_item(self, session, product_type: str, product_id: int, quantity: int = 1):
         result = await session.execute(
             select(CartItem).filter(
                 CartItem.cart_id == self.id,
@@ -76,9 +74,9 @@ class Cart(Base):
         else:
             new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
             session.add(new_item)
+        await session.commit()
 
-    async def remove_item(self, product_type: str, product_id: int):
-        session = SessionLocal()
+    async def remove_item(self, session, product_type: str, product_id: int):
         result = await session.execute(
             select(CartItem).filter(
                 CartItem.cart_id == self.id,
@@ -90,9 +88,9 @@ class Cart(Base):
 
         if existing_item:
             await session.delete(existing_item)
+            await session.commit()
 
-    async def get_total_price(self) -> float:
-        session = SessionLocal()
+    async def get_total_price(self, session) -> float:
         """Ҳисоби нархи умумии сабад."""
         total_price = 0
         for item in self.items:

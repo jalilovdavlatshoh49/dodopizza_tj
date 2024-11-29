@@ -228,7 +228,12 @@ async def decrease_quantity(call: types.CallbackQuery):
             await call.answer("Корзина холӣ аст!", show_alert=True)
             return
 
-        cart_item = next(item for item in cart.items if item.product_type == category and item.product_id == product_id)
+        result = await session.execute(
+        select(CartItem).filter(CartItem.product_type == category, CartItem.product_id == product_id)
+    )
+    
+    # Бозгашти натиҷа, агар бошад
+    cart_items = result.scalars().all()
         if cart_item.quantity > 1:
             cart_item.quantity -= 1
         else:

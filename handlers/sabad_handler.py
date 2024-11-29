@@ -196,7 +196,7 @@ async def increase_quantity(call: types.CallbackQuery):
             await call.answer("Корзина холӣ аст!", show_alert=True)
             return
 
-        await cart.add_item(category, product_id, quantity=1)
+        await cart.add_item(session, category, product_id, quantity=1)
         await session.commit()
 
         # Ҷустуҷӯи cart_item бо истифодаи асинхронӣ

@@ -138,6 +138,7 @@ async def get_keyboard(cart_item: CartItem):
 
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
+    await call.answer()  # Барои қатъ кардани пахши дубораи callback
     async with SessionLocal() as session:
         data = call.data.split("_")
         category, product_id = data[1], int(data[2])
@@ -163,22 +164,35 @@ async def buy_product(call: types.CallbackQuery):
             await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
             return
 
-        # Добавление продукта в корзину
-        await cart.add_item(session, category, product_id, quantity=1)
+        # Проверка на существование элемента в корзине
+        result = await session.execute(
+            select(CartItem).where(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == category,
+                CartItem.product_id == product_id
+            )
+        )
+        existing_item = result.scalars().first()
+
+        if existing_item:
+            # Если элемент уже в корзине, просто увеличиваем количество
+            existing_item.quantity += 1
+        else:
+            # Добавление нового продукта в корзину
+            cart_item = CartItem(
+                cart_id=cart.id,
+                product_type=category,
+                product_id=product_id,
+                quantity=1
+            )
+            session.add(cart_item)
+
         await session.commit()
 
-        # Получение элемента корзины из базы данных
-        result = await session.execute(
-        select(CartItem).where(CartItem.product_type == category, CartItem.product_id == product_id)
-    )
-        cart_item = result.scalars().first()
-
-        if cart_item:
-            keyboard = await get_keyboard(cart_item)
-            # Отправка клавиатуры
-            await call.message.edit_reply_markup(reply_markup=keyboard)
-        else:
-            await call.answer("Элемент не найден", show_alert=True)
+        # Обновление клавиатуры
+        updated_item = existing_item or cart_item
+        keyboard = await get_keyboard(updated_item)
+        await call.message.edit_reply_markup(reply_markup=keyboard)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))

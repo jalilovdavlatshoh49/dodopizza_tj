@@ -245,32 +245,24 @@ async def decrease_quantity(call: types.CallbackQuery):
         # Уменьшение количества или удаление товара
         if cart_item.quantity > 1:
             cart_item.quantity -= 1
-        else:
-            session.delete(cart_item)
+            await session.commit()
 
-        # Сохранение изменений
-        await session.commit()
-
-        # Проверка оставшихся товаров и обновление интерфейса
-        result = await session.execute(
-            select(CartItem).filter(
-                CartItem.cart_id == cart.id,
-                CartItem.product_type == category,
-                CartItem.product_id == product_id
-            )
-        )
-        updated_cart_item = result.scalars().first()
-
-        if updated_cart_item:
             # Обновление клавиатуры для измененного товара
-            await call.message.edit_reply_markup(reply_markup=await get_keyboard(updated_cart_item))  # Added await
+            await call.message.edit_reply_markup(reply_markup=await get_keyboard(cart_item))
         else:
+            # Удаление товара
+            session.delete(cart_item)
+            await session.commit()
+
             # Если товара нет, показать кнопку "Харид"
             await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [
                     InlineKeyboardButton(text="Харид", callback_data=f"buy_{category}_{product_id}")
                 ]
             ]))
+
+    # Сообщение об успешном уменьшении
+    await call.answer("Миқдор кам карда шуд.")
 
 
 

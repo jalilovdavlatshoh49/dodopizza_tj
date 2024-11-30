@@ -263,7 +263,7 @@ async def decrease_quantity(call: types.CallbackQuery):
 
         if updated_cart_item:
             # Обновление клавиатуры для измененного товара
-            await call.message.edit_reply_markup(reply_markup=get_keyboard(updated_cart_item))
+            await call.message.edit_reply_markup(reply_markup=await get_keyboard(updated_cart_item))  # Added await
         else:
             # Если товара нет, показать кнопку "Харид"
             await call.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[

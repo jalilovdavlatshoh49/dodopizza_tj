@@ -262,8 +262,7 @@ async def decrease_quantity(call: types.CallbackQuery):
                 ]
             ]))
 
-    # Сообщение об успешном уменьшении
-    await call.answer("Миқдор кам карда шуд.")
+ 
 
 
 

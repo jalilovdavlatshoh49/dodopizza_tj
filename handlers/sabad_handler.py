@@ -229,94 +229,104 @@ async def show_cart(message: types.Message):
     )
     await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
 
+
+
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))
 async def handle_cart_callbacks(callback_query: types.CallbackQuery):
     session = SessionLocal()
-    user_id = callback_query.from_user.id
-    cart = await get_cart_items(user_id)
-    if not cart or not cart.items:
-        await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
-        return
+    try:
+        user_id = callback_query.from_user.id
+        cart = await get_cart_items(user_id)
+        if not cart or not cart.items:
+            await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
+            return
 
-    # Ҷудо кардани callback data
-    action, item_id = callback_query.data.split(":")[1].split("_")
-    item_id = int(item_id)
+        # Process callback data
+        action, item_id = callback_query.data.split(":")[1].split("_")
+        item_id = int(item_id)
 
-    # Ҷустуҷӯи маҳсулот аз сабад
-    item = next((i for i in cart.items if i.id == item_id), None)
-    if not item:
-        await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-        return
+        # Search for the item in the cart
+        item = next((i for i in cart.items if i.id == item_id), None)
+        if not item:
+            await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+            return
 
-    product_model = globals().get(item.product_type.capitalize())
-    result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
-    product = result.scalars().first()
-
-    if not product:
-        await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-        return
-
-    # Инициализатсия кардани current_index
-    current_index = cart.items.index(item)  # Set current_index based on the item
-
-    # Кор бо амалҳо
-    if action == "increase":
-        item.quantity += 1
-        await session.commit()
-    elif action == "decrease" and item.quantity > 1:
-        item.quantity -= 1
-        await session.commit()
-    elif action == "remove":
-        await cart.remove_item(session, item.product_type, item.product_id)
-        await callback_query.message.delete()
-        await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.", show_alert=True)
-        return
-    elif action in ["prev", "next"]:
-        if action == "prev":
-            current_index = (current_index - 1) % len(cart.items)
-        elif action == "next":
-            current_index = (current_index + 1) % len(cart.items)
-
-        item = cart.items[current_index]
+        # Fetch the product details
         product_model = globals().get(item.product_type.capitalize())
         result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
         product = result.scalars().first()
 
-    # Маълумоти нав барои маҳсулот
-    quantity = item.quantity
-    price = product.price
-    total_price = price * quantity
-    name = product.name
-    description = product.description
+        if not product:
+            await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+            return
 
-    # Тугмаҳои нав
-    keyboard = InlineKeyboardBuilder()
-    keyboard.row(
-        InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
-        InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
-        InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
-        InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
-        InlineKeyboardButton(
-            text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
-        ),
-        InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
-    )
+        # Initialize current_index
+        current_index = cart.items.index(item)
 
-    # Иваз кардани маълумот
-    photo = product.image_url
-    text = (
-        f"{name}\n\n"
-        f"{description}\n\n"
-        f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
-    )
-    await callback_query.message.edit_caption(caption=text, reply_markup=keyboard.as_markup())
-    await callback_query.answer()
+        # Handle actions like increase, decrease, remove, prev, next
+        if action == "increase":
+            item.quantity += 1
+            await session.commit()
+        elif action == "decrease" and item.quantity > 1:
+            item.quantity -= 1
+            await session.commit()
+        elif action == "remove":
+            await cart.remove_item(session, item.product_type, item.product_id)
+            await callback_query.message.delete()
+            await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.", show_alert=True)
+            return
+        elif action in ["prev", "next"]:
+            if action == "prev":
+                current_index = (current_index - 1) % len(cart.items)
+            elif action == "next":
+                current_index = (current_index + 1) % len(cart.items)
+
+            item = cart.items[current_index]
+            product_model = globals().get(item.product_type.capitalize())
+            result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+            product = result.scalars().first()
+
+        # Update product info
+        quantity = item.quantity
+        price = product.price
+        total_price = price * quantity
+        name = product.name
+        description = product.description
+
+        # Build the keyboard
+        keyboard = InlineKeyboardBuilder()
+        keyboard.row(
+            InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
+            InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
+            InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
+            InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
+            InlineKeyboardButton(
+                text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
+            ),
+            InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
+        )
+
+        # Update the message
+        photo = product.image_url
+        text = (
+            f"{name}\n\n"
+            f"{description}\n\n"
+            f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
+        )
+        await callback_query.message.edit_caption(caption=text, reply_markup=keyboard.as_markup())
+        await callback_query.answer()
+
+    except Exception as e:
+        await callback_query.answer("Произошла ошибка, попробуйте снова.", show_alert=True)
+        print(f"Error occurred: {e}")
+    finally:
+        await session.close()  # Ensure the session is closed

@@ -165,7 +165,6 @@ async def decrease_quantity(call: types.CallbackQuery):
             ]))
 
  
-
 # Функсия барои гирифтани маълумоти сабад
 async def get_cart_items(user_id: int):
     async with SessionLocal() as session:
@@ -177,28 +176,26 @@ async def get_cart_items(user_id: int):
         cart = result.scalars().first()
         return cart
 
-
-
 # Хандлер барои фармони /cart
 @sabad_router.message(Command("cart"))
 async def show_cart(message: types.Message):
+    user_id = message.from_user.id
+    cart = await get_cart_items(user_id)
+
+    if not cart or not cart.items:
+        await message.answer("Сабади шумо холӣ аст.")
+        return
+
+    # Пешсаҳифа барои маҳсулоти сабад
+    current_index = 0
+    item = cart.items[current_index]
+    product_model = globals().get(item.product_type.capitalize())
+
+    if not product_model:
+        await message.answer("Модели маҳсулот ёфт нашуд.")
+        return
+
     async with SessionLocal() as session:
-        user_id = message.from_user.id
-        cart = await get_cart_items(user_id)
-
-        if not cart or not cart.items:
-            await message.answer("Сабади шумо холӣ аст.")
-            return
-
-        # Пешсаҳифа барои маҳсулоти сабад
-        current_index = 0
-        item = cart.items[current_index]
-        product_model = globals().get(item.product_type.capitalize())
-
-        if not product_model:
-            await message.answer("Модели маҳсулот ёфт нашуд.")
-            return
-
         result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
         product = result.scalars().first()
 
@@ -216,10 +213,10 @@ async def show_cart(message: types.Message):
         # Сохтани клавиатура
         keyboard = InlineKeyboardBuilder()
         keyboard.row(
-            InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
-            InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
+            InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.product_type}_{item.product_id}"),
+            InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}"),
             InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
-            InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
+            InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}"),
         )
         keyboard.row(
             InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
@@ -243,6 +240,8 @@ async def show_cart(message: types.Message):
             f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
         )
         await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
+
+
 
 
 # Хандлер барои callback-и сабад

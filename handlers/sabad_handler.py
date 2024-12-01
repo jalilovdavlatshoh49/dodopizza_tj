@@ -201,17 +201,17 @@ async def show_cart(message: types.Message):
     # Сохтани клавиатура
     keyboard = InlineKeyboardBuilder()
     keyboard.row(
-        InlineKeyboardButton(text="❌ Нест кардан", callback_data=f"remove_{item.id}"),
-        InlineKeyboardButton(text="➖", callback_data=f"decrease_{item.id}"),
+        InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
+        InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
         InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
-        InlineKeyboardButton(text="➕", callback_data=f"increase_{item.id}"),
+        InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
     )
     keyboard.row(
-        InlineKeyboardButton(text="⬅️", callback_data=f"prev_{current_index}"),
+        InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
         InlineKeyboardButton(
             text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
         ),
-        InlineKeyboardButton(text="➡️", callback_data=f"next_{current_index}"),
+        InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
     )
     keyboard.row(
         InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
@@ -223,8 +223,8 @@ async def show_cart(message: types.Message):
     # Ирсоли паём
     photo = product.image_url  # URL расми маҳсулот
     text = (
-        f"<b>{name}</b>\n"
-        f"{description}\n"
+        f"{name}\n\n"
+        f"{description}\n\n"
         f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
     )
     await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
@@ -234,29 +234,29 @@ async def show_cart(message: types.Message):
 async def handle_callback(call: types.CallbackQuery):
     session = SessionLocal()
     data = call.data
-    if data.startswith("remove_"):
+    if data.startswith("sabad:remove_"):
         item_id = int(data.split("_")[1])
         # Нест кардани маҳсулот
         await remove_item_from_cart(item_id)
         await call.answer("Маҳсулот нест карда шуд.")
-        await show_cart(call.message, session)
-    elif data.startswith("decrease_"):
+        await show_cart(call.message)
+    elif data.startswith("sabad:decrease_"):
         item_id = int(data.split("_")[1])
         # Кам кардани миқдор
         await decrease_item_quantity(item_id)
-        await call.answer("Миқдор кам шуд.")
-        await show_cart(call.message, session)
-    elif data.startswith("increase_"):
+        
+        await show_cart(call.message)
+    elif data.startswith("sabad:increase_"):
         item_id = int(data.split("_")[1])
         # Афзудани миқдор
         await increase_item_quantity(item_id)
-        await call.answer("Миқдор зиёд шуд.")
-        await show_cart(call.message, session)
-    elif data.startswith("prev_") or data.startswith("next_"):
+        
+        await show_cart(call.message)
+    elif data.startswith("sabad:prev_") or data.startswith("next_"):
         # Паймоиш байни маҳсулотҳо
         current_index = int(data.split("_")[1])
         new_index = (current_index - 1) if data.startswith("prev_") else (current_index + 1)
-        await show_cart(call.message, session, new_index)
+        await show_cart(call.message, new_index)
     elif data == "checkout":
         await call.answer("Шумо фармоиши худро аформит кардед!")
     elif data == "continue_shopping":

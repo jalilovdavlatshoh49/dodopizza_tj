@@ -260,9 +260,14 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
         product_type = parts[1]
         product_id = int(parts[2])
 
+   
     # Ҷустуҷӯи маҳсулоти мувофиқ
     if action not in ["prev", "next"]:
-        item = next((i for i in cart.items if i.product_type == product_type and i.product_id == product_id), None)
+        item = None
+        for i in cart.items:
+            if i.product_type == product_type and i.product_id == product_id:
+                item = i
+                break
         if not item:
             await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
             return

@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.filters import Command
 from sqlalchemy.future import select
 from database.db import SessionLocal, Cart, CartItem
+from sqlalchemy.orm import joinedload
 from database.tables import *
 sabad_router = Router()
 
@@ -165,8 +166,10 @@ async def decrease_quantity(call: types.CallbackQuery):
 async def get_cart_items(user_id: int):
     async with SessionLocal() as session:
         result = await session.execute(
-        select(Cart).filter(Cart.user_id == user_id, Cart.status == OrderStatus.PENDING)
-    )
+            select(Cart)
+            .filter(Cart.user_id == user_id, Cart.status == OrderStatus.PENDING)
+            .options(joinedload(Cart.items))  # Пешакӣ бор кардани муносибатҳо
+        )
         cart = result.scalars().first()
         return cart
 

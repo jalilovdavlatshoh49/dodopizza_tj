@@ -325,14 +325,19 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
             InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
         )
 
-        # Update the message
+        # New text and keyboard
         photo = product.image_url
-        text = (
+        new_caption = (
             f"{name}\n\n"
             f"{description}\n\n"
             f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
         )
-        await callback_query.message.edit_caption(caption=text, reply_markup=keyboard.as_markup())
+        new_markup = keyboard.as_markup()
+
+        # Compare and update if necessary
+        if callback_query.message.caption != new_caption or callback_query.message.reply_markup != new_markup:
+            await callback_query.message.edit_caption(caption=new_caption, reply_markup=new_markup)
+
         await callback_query.answer()
 
     except Exception as e:

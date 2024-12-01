@@ -175,7 +175,7 @@ async def get_cart_items(user_id: int):
 async def show_cart(message: types.Message):
     session = SessionLocal()
     user_id = message.from_user.id
-    cart = await get_cart_items(session, user_id)
+    cart = await get_cart_items(user_id)
     if not cart or not cart.items:
         await message.answer("Сабади шумо холӣ аст.")
         return

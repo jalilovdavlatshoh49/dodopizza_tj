@@ -241,7 +241,6 @@ async def show_cart(message: types.Message):
         )
         await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
 
-# Хандлер барои callback-и сабад
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))
 async def handle_cart_callbacks(callback_query: types.CallbackQuery):
     user_id = callback_query.from_user.id
@@ -254,15 +253,14 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
     data = callback_query.data.split(":")[1]
     parts = data.split("_")
     action = parts[0]
+
     if action in ["prev", "next"]:
         current_index = int(parts[1])
     else:
         product_type = parts[1]
         product_id = int(parts[2])
 
-   
-    # Ҷустуҷӯи маҳсулоти мувофиқ
-    if action not in ["prev", "next"]:
+        # Ҷустуҷӯи маҳсулот
         item = None
         for i in cart.items:
             if i.product_type == product_type and i.product_id == product_id:
@@ -341,5 +339,6 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
     if callback_query.message.caption != new_caption:
         await callback_query.message.edit_caption(caption=new_caption, reply_markup=keyboard.as_markup())
 
+    # Коммит кардани тағирот
     async with SessionLocal() as session:
         await session.commit()

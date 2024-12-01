@@ -76,17 +76,10 @@ async def buy_product(call: types.CallbackQuery):
         )
         cart_item = result.scalars().first()
         if cart_item:
-            # Эҷоди клавиатура
-            builder = InlineKeyboardBuilder()
-    
-            builder.row(
-        InlineKeyboardButton(text="➖ Кам", callback_data=f"decrease_{category}_{product_id}"),
-        InlineKeyboardButton(text=f"🛒 {cart_item_quantity} штук", callback_data="noop"),
-        InlineKeyboardButton(text="➕ Ҳамро", callback_data=f"increase_{category}_{product_id}")
-    )
+            keyboard = await get_keyboard(cart_item)
     
             # Тағир додани reply_markup
-            await call.message.edit_reply_markup(reply_markup=builder.as_markup())
+            await call.message.edit_reply_markup(reply_markup=keyboard)
         else:
             await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
 

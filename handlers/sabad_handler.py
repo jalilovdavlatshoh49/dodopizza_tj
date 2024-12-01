@@ -256,6 +256,9 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
         await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
         return
 
+    # Инициализатсия кардани current_index
+    current_index = cart.items.index(item)  # Set current_index based on the item
+
     # Кор бо амалҳо
     if action == "increase":
         item.quantity += 1
@@ -269,11 +272,11 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
         await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.", show_alert=True)
         return
     elif action in ["prev", "next"]:
-        current_index = int(item_id)
         if action == "prev":
             current_index = (current_index - 1) % len(cart.items)
         elif action == "next":
             current_index = (current_index + 1) % len(cart.items)
+
         item = cart.items[current_index]
         product_model = globals().get(item.product_type.capitalize())
         result = await session.execute(select(product_model).filter(product_model.id == item.product_id))

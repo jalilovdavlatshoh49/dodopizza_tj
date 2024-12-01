@@ -244,10 +244,6 @@ async def show_cart(message: types.Message):
 
 
 
-from aiogram import types
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 # Хандлер барои callback-и сабад
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))

@@ -244,48 +244,45 @@ async def show_cart(message: types.Message):
 
 
 
+from aiogram import types
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 # Хандлер барои callback-и сабад
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))
 async def handle_cart_callbacks(callback_query: types.CallbackQuery):
-    async with SessionLocal() as session:
+    async with SessionLocal() as session:  # SessionLocal - функсияи эҷоди сессияи Async
         try:
             user_id = callback_query.from_user.id
-            cart = await get_cart_items(user_id)
+            cart = await get_cart_items(session, user_id)  # Функсияе, ки сабадро мегирад
 
             if not cart or not cart.items:
                 await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
                 return
 
             data = callback_query.data.split(":")[1]  # Формати "action_type_productType_productId"
-            action, product_type, product_id = data.split("_")
-            product_id = int(product_id)
+            parts = data.split("_")
+            action = parts[0]
+            if action in ["prev", "next"]:
+                current_index = int(parts[1])
+            else:
+                product_type = parts[1]
+                product_id = int(parts[2])
 
             # Ҷустуҷӯи маҳсулоти мувофиқ
-            item = next((i for i in cart.items if i.product_type == product_type and i.product_id == product_id), None)
-            if not item:
-                await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-                return
-
-            product_model = globals().get(product_type.capitalize())
-            if not product_model:
-                await callback_query.answer("Модели маҳсулот ёфт нашуд.", show_alert=True)
-                return
-
-            result = await session.execute(select(product_model).filter(product_model.id == product_id))
-            product = result.scalars().first()
-            if not product:
-                await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-                return
-
-            current_index = cart.items.index(item)
+            if action not in ["prev", "next"]:
+                item = next((i for i in cart.items if i.product_type == product_type and i.product_id == product_id), None)
+                if not item:
+                    await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+                    return
+                current_index = cart.items.index(item)
 
             # Амалиёт дар асоси `action`
             if action == "increase":
-                item.quantity += 1
-                await session.commit()
-            elif action == "decrease" and item.quantity > 1:
-                item.quantity -= 1
-                await session.commit()
+                cart.items[current_index].quantity += 1
+            elif action == "decrease" and cart.items[current_index].quantity > 1:
+                cart.items[current_index].quantity -= 1
             elif action == "remove":
                 await cart.remove_item(session, product_type, product_id)
                 await callback_query.message.delete()
@@ -293,10 +290,21 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
                 return
             elif action == "prev":
                 current_index = (current_index - 1) % len(cart.items)
-                item = cart.items[current_index]
             elif action == "next":
                 current_index = (current_index + 1) % len(cart.items)
-                item = cart.items[current_index]
+
+            # Маҳсулоти ҷорӣ
+            item = cart.items[current_index]
+            product_model = globals().get(item.product_type.capitalize())
+            if not product_model:
+                await callback_query.answer("Модели маҳсулот ёфт нашуд.", show_alert=True)
+                return
+
+            result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+            product = result.scalars().first()
+            if not product:
+                await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+                return
 
             # Навсозии маълумоти маҳсулот
             quantity = item.quantity
@@ -307,10 +315,10 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
             # Сохтани клавиатураи нав
             keyboard = InlineKeyboardBuilder()
             keyboard.row(
-                InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{product_type}_{product_id}"),
-                InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{product_type}_{product_id}"),
+                InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.product_type}_{item.product_id}"),
+                InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}"),
                 InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
-                InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{product_type}_{product_id}"),
+                InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}"),
             )
             keyboard.row(
                 InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
@@ -336,6 +344,7 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
             if callback_query.message.caption != new_caption:
                 await callback_query.message.edit_caption(caption=new_caption, reply_markup=keyboard.as_markup())
 
+            await session.commit()  # Захира кардани тағйиротҳо
             await callback_query.answer()
 
         except Exception as e:

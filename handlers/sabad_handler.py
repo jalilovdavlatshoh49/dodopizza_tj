@@ -174,60 +174,70 @@ async def get_cart_items(user_id: int):
         cart = result.scalars().first()
         return cart
 
+
+
 # Хандлер барои фармони /cart
 @sabad_router.message(Command("cart"))
 async def show_cart(message: types.Message):
-    session = SessionLocal()
-    user_id = message.from_user.id
-    cart = await get_cart_items(user_id)
-    if not cart or not cart.items:
-        await message.answer("Сабади шумо холӣ аст.")
-        return
+    # Барои пешгирӣ кардани иштибоҳҳо, ҷудо кардани сессия ва сохтани як context барои он
+    async with SessionLocal() as session:
+        user_id = message.from_user.id
+        cart = await get_cart_items(user_id)
 
-    # Пешсаҳифа барои маҳсулоти сабад
-    current_index = 0
-    item = cart.items[current_index]
-    product_model = globals().get(item.product_type.capitalize())
-    result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
-    product = result.scalars().first()
+        if not cart or not cart.items:
+            await message.answer("Сабади шумо холӣ аст.")
+            return
 
-    # Маълумоти маҳсулот
-    name = product.name
-    description = product.description
-    price = product.price
-    quantity = item.quantity
-    total_price = price * quantity
+        # Пешсаҳифа барои маҳсулоти сабад
+        current_index = 0
+        item = cart.items[current_index]
+        product_model = globals().get(item.product_type.capitalize())
+        
+        # Бо як вақт иҷро кардани query
+        result = await session.execute(select(product_model).filter(product_model.id == item.product_id))
+        product = result.scalars().first()
 
-    # Сохтани клавиатура
-    keyboard = InlineKeyboardBuilder()
-    keyboard.row(
-        InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
-        InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
-        InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
-        InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
-        InlineKeyboardButton(
-            text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
-        ),
-        InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
-    )
-    keyboard.row(
-        InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
-    )
+        if not product:
+            await message.answer("Маҳсулот ёфт нашуд.")
+            return
 
-    # Ирсоли паём
-    photo = product.image_url  # URL расми маҳсулот
-    text = (
-        f"{name}\n\n"
-        f"{description}\n\n"
-        f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
-    )
-    await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
+        # Маълумоти маҳсулот
+        name = product.name
+        description = product.description
+        price = product.price
+        quantity = item.quantity
+        total_price = price * quantity
+
+        # Сохтани клавиатура
+        keyboard = InlineKeyboardBuilder()
+        keyboard.row(
+            InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.id}"),
+            InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.id}"),
+            InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
+            InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.id}"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text="⬅️", callback_data=f"sabad:prev_{current_index}"),
+            InlineKeyboardButton(
+                text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
+            ),
+            InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
+        )
+        keyboard.row(
+            InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
+        )
+
+        # Ирсоли паём
+        photo = product.image_url  # URL расми маҳсулот
+        text = (
+            f"{name}\n\n"
+            f"{description}\n\n"
+            f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
+        )
+        await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard.as_markup())
 
 
 

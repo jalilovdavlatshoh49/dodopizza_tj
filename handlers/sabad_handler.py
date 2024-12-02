@@ -296,3 +296,49 @@ async def handle_increase(callback_query: CallbackQuery):
             # Паёми навро иваз кунед
             await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
     await callback_query.answer("Миқдор зиёд шуд!")
+
+@sabad_router.callback_query(lambda c: c.data.startswith('sabad:decrease_'))
+async def handle_decrease(callback_query: CallbackQuery):
+    _, product_type, product_id = callback_query.data.split("_")
+    product_id = int(product_id)
+    user_id = callback_query.from_user.id
+
+    async with SessionLocal() as session:
+        # Сабадро гиред
+        cart = await get_user_cart(user_id)
+        if cart:
+            # Миқдори маҳсулотро кам кунед
+            item = next((i for i in cart.items if i.product_id == product_id and i.product_type == product_type), None)
+            if item:
+                if item.quantity > 1:
+                    item.quantity -= 1
+                    await session.commit()
+                else:
+                    # Агар миқдор 1 бошад, онро аз сабад тоза кунед
+                    await cart.remove_item(session, product_type, product_id)
+
+                # Сабади навро гиред
+                updated_cart = await get_user_cart(user_id)
+
+                if updated_cart and updated_cart.items:
+                    total_price = await updated_cart.get_total_price(session)
+                    current_index = next((i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0)
+                    updated_item = updated_cart.items[current_index]
+
+                    # Клавиатураро нав кунед
+                    keyboard = create_cart_keyboard(updated_cart, current_index, updated_item, total_price)
+
+                    # Паёми навро иваз кунед
+                    product_model = globals().get(updated_item.product_type.capitalize())
+                    product = await get_product_by_id(product_model, updated_item.product_id)
+                    text = (
+                        f"{product.name}\n\n"
+                        f"{product.description}\n\n"
+                        f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
+                    )
+                    await callback_query.message.edit_caption(caption=text, reply_markup=keyboard.as_markup())
+                else:
+                    # Агар сабад холӣ бошад
+                    await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
+
+    await callback_query.answer("Миқдор кам шуд!")

@@ -270,60 +270,29 @@ async def show_cart(message: types.Message):
     await send_cart_item_details(message, product, item, current_index, cart)
 
 
-@sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))
-async def handle_cart_callbacks(callback_query: types.CallbackQuery):
-    """Коркарди callback-ҳо барои сабад."""
+
+@sabad_router.callback_query(lambda c: c.data.startswith('sabad:increase_'))
+async def handle_increase(callback_query: CallbackQuery):
+    _, product_type, product_id = callback_query.data.split("_")
+    product_id = int(product_id)
     user_id = callback_query.from_user.id
-    cart = await get_user_cart(user_id)
 
-    if not cart or not cart.items:
-        await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
-        return
+    async with SessionLocal() as session:
+        # Сабадро гиред
+        cart = await get_user_cart(user_id)
+        if cart:
+            # Миқдорро зиёд кунед
+            await cart.add_item(session, product_type, product_id, quantity=1)
+            await session.commit()
+            
+            # Сабади навро гиред
+            updated_cart = await get_user_cart(user_id)
+            total_price = await updated_cart.get_total_price(session)
 
-    data = callback_query.data.split(":")[1]
-    parts = data.split("_")
-    action = parts[0]
-    current_index = 0
+            # Клавиатураро нав кунед
+            current_index = next((i for i, item in enumerate(updated_cart.items) if item.product_id == product_id), 0)
+            keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
 
-    if action in ["prev", "next"]:
-        current_index = int(parts[1])
-    else:
-        product_type = parts[1]
-        product_id = int(parts[2])
-        item = next(
-            (i for i in cart.items if i.product_type == product_type and i.product_id == product_id), None
-        )
-        if not item:
-            await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-            return
-        current_index = cart.items.index(item)
-
-    if action == "increase":
-        cart.items[current_index].quantity += 1
-    elif action == "decrease" and cart.items[current_index].quantity > 1:
-        cart.items[current_index].quantity -= 1
-    elif action == "remove":
-        await cart.remove_item(SessionLocal(), product_type, product_id)
-        await callback_query.message.delete()
-        await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.", show_alert=True)
-        return
-    elif action == "prev":
-        current_index = (current_index - 1) % len(cart.items)
-    elif action == "next":
-        current_index = (current_index + 1) % len(cart.items)
-
-    item = cart.items[current_index]
-    product_model = globals().get(item.product_type.capitalize())
-    if not product_model:
-        await callback_query.answer("Модели маҳсулот ёфт нашуд.", show_alert=True)
-        return
-
-    product = await get_product_by_id(product_model, item.product_id)
-    if not product:
-        await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
-        return
-
-    await send_cart_item_details(
-        callback_query.message, product, item, current_index, cart
-    )
-    await callback_query.answer()
+            # Паёми навро иваз кунед
+            await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
+    await callback_query.answer("Миқдор зиёд шуд!")

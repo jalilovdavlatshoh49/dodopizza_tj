@@ -244,29 +244,30 @@ async def show_cart(message: types.Message):
 @sabad_router.callback_query(lambda c: c.data.startswith("sabad:"))
 async def handle_cart_callbacks(callback_query: types.CallbackQuery):
     user_id = callback_query.from_user.id
-    cart = await get_cart_items(user_id)
-
-    if not cart or not cart.items:
-        await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
-        return
-
-    data = callback_query.data.split(":")[1]
-    parts = data.split("_")
-    action = parts[0]
-
+    
+    # Сессияи async барои кор бо базаи додаҳо
     async with SessionLocal() as session:
+        # Ҷустуҷӯи сабад барои корбар
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+
+        if not cart or not cart.items:
+            await callback_query.answer("Сабади шумо холӣ аст.", show_alert=True)
+            return
+
+        # Таҳлили маълумоти callback
+        data = callback_query.data.split(":")[1]
+        parts = data.split("_")
+        action = parts[0]
+
         if action in ["prev", "next"]:
             current_index = int(parts[1])
         else:
             product_type = parts[1]
             product_id = int(parts[2])
 
-            # Ҷустуҷӯи маҳсулот
-            item = None
-            for i in cart.items:
-                if i.product_type == product_type and i.product_id == product_id:
-                    item = i
-                    break
+            # Ҷустуҷӯи маҳсулот дар сабад
+            item = next((i for i in cart.items if i.product_type == product_type and i.product_id == product_id), None)
             if not item:
                 await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
                 return
@@ -289,7 +290,7 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
         elif action == "next":
             current_index = (current_index + 1) % len(cart.items)
 
-        # Маҳсулоти ҷорӣ
+        # Навсозии маълумоти маҳсулот
         item = cart.items[current_index]
         product_model = globals().get(item.product_type.capitalize())
         if not product_model:
@@ -302,18 +303,12 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
             await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
             return
 
-        # Навсозии маълумоти маҳсулот
-        quantity = item.quantity
-        total_price = product.price * quantity
-        name = product.name
-        description = product.description
-
         # Сохтани клавиатураи нав
         keyboard = InlineKeyboardBuilder()
         keyboard.row(
             InlineKeyboardButton(text="❌", callback_data=f"sabad:remove_{item.product_type}_{item.product_id}"),
             InlineKeyboardButton(text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}"),
-            InlineKeyboardButton(text=f"{quantity}", callback_data="noop"),
+            InlineKeyboardButton(text=f"{item.quantity}", callback_data="noop"),
             InlineKeyboardButton(text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}"),
         )
         keyboard.row(
@@ -324,7 +319,9 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
             InlineKeyboardButton(text="➡️", callback_data=f"sabad:next_{current_index}"),
         )
         keyboard.row(
-            InlineKeyboardButton(text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"),
+            InlineKeyboardButton(
+                text=f"🛒 Аформит заказ на {await cart.get_total_price(session)} сомонӣ", callback_data="checkout"
+            ),
         )
         keyboard.row(
             InlineKeyboardButton(text="🔄 Продолжить покупки", callback_data="continue_shopping"),
@@ -332,9 +329,9 @@ async def handle_cart_callbacks(callback_query: types.CallbackQuery):
 
         # Навсозии паём
         new_caption = (
-            f"{name}\n\n"
-            f"{description}\n\n"
-            f"Нарх: {product.price} x {quantity} = {total_price} сомонӣ"
+            f"{product.name}\n\n"
+            f"{product.description}\n\n"
+            f"Нарх: {product.price} x {item.quantity} = {product.price * item.quantity} сомонӣ"
         )
 
         if callback_query.message.caption != new_caption:

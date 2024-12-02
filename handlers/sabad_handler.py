@@ -325,20 +325,24 @@ async def handle_decrease(callback_query: CallbackQuery):
                     current_index = next((i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0)
                     updated_item = updated_cart.items[current_index]
 
-                    # Клавиатураро нав кунед
+                    # Клавиатура ва матнро созед
                     keyboard = create_cart_keyboard(updated_cart, current_index, updated_item, total_price)
 
-                    # Паёми навро иваз кунед
+                    # Матнро созед
                     product_model = globals().get(updated_item.product_type.capitalize())
                     product = await get_product_by_id(product_model, updated_item.product_id)
-                    text = (
+                    new_text = (
                         f"{product.name}\n\n"
                         f"{product.description}\n\n"
                         f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
                     )
-                    await callback_query.message.edit_caption(caption=text, reply_markup=keyboard.as_markup())
+
+                    # Танҳо дар ҳолати тағйир навсозӣ кунед
+                    if callback_query.message.caption != new_text or callback_query.message.reply_markup != keyboard.as_markup():
+                        await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
                 else:
                     # Агар сабад холӣ бошад
-                    await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
+                    if callback_query.message.caption != "Сабади шумо холӣ аст.":
+                        await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
 
     await callback_query.answer("Миқдор кам шуд!")

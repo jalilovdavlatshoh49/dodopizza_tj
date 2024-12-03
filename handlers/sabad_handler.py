@@ -271,8 +271,60 @@ async def show_cart(message: types.Message):
 
 
 
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from sqlalchemy.future import select
+@sabad_router.callback_query(lambda c: c.data.startswith('sabad:increase_'))
+async def increase_quantity(callback_query: CallbackQuery):
+    """Миқдори маҳсулотро зиёд мекунад."""
+    _, product_type, product_id = callback_query.data.split("_")
+    product_id = int(product_id)
+    user_id = callback_query.from_user.id
+
+    async with SessionLocal() as session:
+        # Retrieve the cart
+        cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
+        cart = cart_result.scalars().first()
+
+        if not cart:
+            await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
+            return
+
+        # Retrieve the cart item
+        item_result = await session.execute(
+            select(CartItem).where(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == product_type,
+                CartItem.product_id == product_id
+            )
+        )
+        item = item_result.scalars().first()
+
+        if not item:
+            await callback_query.answer("Маҳсулот дар сабад нест!", show_alert=True)
+            return
+
+        # Increase quantity
+        item.quantity += 1
+        await session.commit()
+
+        # Fetch updated cart
+        updated_cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
+        updated_cart = updated_cart_result.scalars().first()
+
+        if updated_cart and updated_cart.items:
+            total_price = await updated_cart.get_total_price(session)
+            current_index = next(
+                (i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0
+            )
+            keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
+            await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
+        else:
+            # If cart is empty, show a default message
+            await callback_query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Сабад холӣ аст!", callback_data="empty_cart")]
+            ]))
+    await callback_query.answer("Миқдор зиёд карда шуд!")
+
+
+
 
 @sabad_router.callback_query(lambda c: c.data.startswith('sabad:decrease_'))
 async def decrease_quantity(callback_query: CallbackQuery):

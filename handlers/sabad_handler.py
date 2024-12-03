@@ -271,34 +271,11 @@ async def show_cart(message: types.Message):
 
 
 
-@sabad_router.callback_query(lambda c: c.data.startswith('sabad:increase_'))
-async def handle_increase(callback_query: CallbackQuery):
-    _, product_type, product_id = callback_query.data.split("_")
-    product_id = int(product_id)
-    user_id = callback_query.from_user.id
-
-    async with SessionLocal() as session:
-        # Сабадро гиред
-        cart = await get_user_cart(user_id)
-        if cart:
-            # Миқдорро зиёд кунед
-            await cart.add_item(session, product_type, product_id, quantity=1)
-            await session.commit()
-            
-            # Сабади навро гиред
-            updated_cart = await get_user_cart(user_id)
-            total_price = await updated_cart.get_total_price(session)
-
-            # Клавиатураро нав кунед
-            current_index = next((i for i, item in enumerate(updated_cart.items) if item.product_id == product_id), 0)
-            keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
-
-            # Паёми навро иваз кунед
-            await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
-    await callback_query.answer("Миқдор зиёд шуд!")
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from sqlalchemy.future import select
 
 @sabad_router.callback_query(lambda c: c.data.startswith('sabad:decrease_'))
-async def handle_decrease(callback_query: CallbackQuery):
+async def decrease_quantity(callback_query: CallbackQuery):
     _, product_type, product_id = callback_query.data.split("_")
     product_id = int(product_id)
     user_id = callback_query.from_user.id
@@ -348,7 +325,7 @@ async def handle_decrease(callback_query: CallbackQuery):
         else:
             # If cart is empty, show a default message
             await callback_query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Харид", callback_data=f"buy_{product_type}_{product_id}")]
+                [InlineKeyboardButton(text="Сабад холӣ аст!", callback_data="empty_cart")]
             ]))
     await callback_query.answer("Миқдор кам карда шуд!")
 

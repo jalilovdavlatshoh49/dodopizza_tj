@@ -304,68 +304,64 @@ async def handle_decrease(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
 
     async with SessionLocal() as session:
-        try:
-            # Get the cart
-            result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
-            cart = result.scalars().first()
+        # Get the cart
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
 
-            if not cart:
-                await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
-                return
+        if not cart:
+            await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
+            return
 
-            # Get the product in the cart
-            result = await session.execute(
-                select(CartItem).filter(
-                    CartItem.cart_id == cart.id,
-                    CartItem.product_type == product_type,
-                    CartItem.product_id == product_id
-                )
+        # Get the product in the cart
+        result = await session.execute(
+            select(CartItem).filter(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == product_type,
+                CartItem.product_id == product_id
             )
-            item = result.scalars().first()
+        )
+        item = result.scalars().first()
 
-            if not item:
-                await callback_query.answer("Маҳсулот дар сабад нест!", show_alert=True)
+        if not item:
+            await callback_query.answer("Маҳсулот дар сабад нест!", show_alert=True)
+            return
+
+        # Decrease quantity or remove the item
+        if item.quantity > 1:
+            item.quantity -= 1
+        else:
+            await session.delete(item)
+
+        await session.commit()
+
+        # Update and fetch the cart
+        updated_cart_result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        updated_cart = updated_cart_result.scalars().first()
+
+        if updated_cart and updated_cart.items:
+            total_price = await updated_cart.get_total_price(session)
+            updated_item = next((itm for itm in updated_cart.items if itm.product_id == product_id), None)
+
+            if not updated_item:
+                await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
                 return
 
-            # Decrease quantity or remove the item
-            if item.quantity > 1:
-                item.quantity -= 1
-            else:
-                await session.delete(item)
+            product_model = globals().get(updated_item.product_type.capitalize())
+            result = await session.execute(select(product_model).filter(product_model.id == updated_item.product_id))
+            product = result.scalars().first()
 
-            await session.commit()
+            if not product:
+                await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+                return
 
-            # Update and fetch the cart
-            updated_cart_result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
-            updated_cart = updated_cart_result.scalars().first()
+            keyboard = create_cart_keyboard(updated_cart, updated_item, total_price)
+            new_text = (
+                f"{product.name}\n\n"
+                f"{product.description}\n\n"
+                f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
+            )
+            await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
+        else:
+            await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
 
-            if updated_cart and updated_cart.items:
-                total_price = await updated_cart.get_total_price(session)
-                updated_item = next((itm for itm in updated_cart.items if itm.product_id == product_id), None)
-
-                if not updated_item:
-                    await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
-                    return
-
-                product_model = globals().get(updated_item.product_type.capitalize())
-                result = await session.execute(select(product_model).filter(product_model.id == updated_item.product_id))
-                product = result.scalars().first()
-
-                if not product:
-                    await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
-                    return
-
-                keyboard = create_cart_keyboard(updated_cart, updated_item, total_price)
-                new_text = (
-                    f"{product.name}\n\n"
-                    f"{product.description}\n\n"
-                    f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
-                )
-                await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
-            else:
-                await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
-
-            await callback_query.answer("Миқдор кам шуд!")
-        except Exception as e:
-            await callback_query.answer("Хато рух дод!", show_alert=True)
-            raise
+        

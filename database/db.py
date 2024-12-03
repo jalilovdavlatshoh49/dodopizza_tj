@@ -138,6 +138,20 @@ class CartItem(Base):
         price = await self.get_price(session)
         return price * self.quantity
 
+
+    async def increase_quantity(self, session, amount: int = 1):
+        """Зиёд кардани миқдори маҳсулот."""
+        self.quantity += amount
+        await session.commit()
+
+    async def decrease_quantity(self, session, amount: int = 1):
+        """Кам кардани миқдори маҳсулот."""
+        if self.quantity > amount:
+            self.quantity -= amount
+        else:
+            await session.delete(self)  # Агар миқдор ба 0 расад, маҳсулот нест мешавад
+        await session.commit()
+
 async def init_db():
     async with engine.begin() as conn:
         # Сохтани ҳамаи таблицаҳо дар база

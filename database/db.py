@@ -1,7 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Enum, BigInteger, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.future import select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from database.tables import *
 import os
@@ -9,12 +9,10 @@ from dotenv import load_dotenv
 import asyncmy
 
 load_dotenv()
-db_url=os.getenv("DATABASE_URL")
-
+db_url = os.getenv("DATABASE_URL")
 
 # Асинкронӣ пайвастшавӣ ба MySQL
 engine = create_async_engine(db_url, echo=True)
-
 
 SessionLocal = async_sessionmaker(
     engine, 
@@ -22,6 +20,8 @@ SessionLocal = async_sessionmaker(
     class_=AsyncSession
 )
 
+# Асинкронӣ табдили коди таблицаҳо
+Base = declarative_base()
 
 class Order(Base):
     __tablename__ = 'order'
@@ -29,20 +29,16 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     cart_id = Column(Integer, ForeignKey('cart.id'))  # Равиш ба сабад
     cart = relationship("Cart", back_populates="order")
-    
-    # Ҳолати заказ
+
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
-    
-    # Маъзарат ва маълумоти рақами телефон
-    customer_name = Column(String(255), index=True)  # Номи мизоҷ
-    phone_number = Column(String(15), index=True)    # Рақами телефон (String барои +)
 
-    # Барои пайгирии id-и Telegram
-    user_id = Column(BigInteger, index=True)  # Telegram User ID
+    customer_name = Column(String(255), index=True)  
+    phone_number = Column(String(15), index=True)  
 
-    # Маълумоти суроға
-    address = Column(String(512), nullable=True)  # Суроғаи дастӣ
-    latitude = Column(Float, nullable=True)       # Координатаҳои GPS
+    user_id = Column(BigInteger, index=True)  
+
+    address = Column(String(512), nullable=True)  
+    latitude = Column(Float, nullable=True)       
     longitude = Column(Float, nullable=True)
 
     def __init__(self, cart, customer_name, phone_number, user_id, address=None, latitude=None, longitude=None):
@@ -60,44 +56,45 @@ class Cart(Base):
     __tablename__ = 'cart'
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(BigInteger, index=True)  # ID-и корбар
-    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")  # Предметҳои сабад
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  # Статуси сабад
+    user_id = Column(BigInteger, index=True)  
+    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")  
+    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)  
     order = relationship("Order", back_populates="cart", uselist=False)
 
     async def add_item(self, session, product_type: str, product_id: int, quantity: int = 1):
-        result = await session.execute(
-            select(CartItem).filter(
-                CartItem.cart_id == self.id,
-                CartItem.product_type == product_type,
-                CartItem.product_id == product_id
+        async with session.begin():
+            result = await session.execute(
+                select(CartItem).filter(
+                    CartItem.cart_id == self.id,
+                    CartItem.product_type == product_type,
+                    CartItem.product_id == product_id
+                )
             )
-        )
-        existing_item = result.scalars().first()
+            existing_item = result.scalars().first()
 
-        if existing_item:
-            existing_item.quantity += quantity
-        else:
-            new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
-            session.add(new_item)
-        await session.commit()
-
-    async def remove_item(self, session, product_type: str, product_id: int):
-        result = await session.execute(
-            select(CartItem).filter(
-                CartItem.cart_id == self.id,
-                CartItem.product_type == product_type,
-                CartItem.product_id == product_id
-            )
-        )
-        existing_item = result.scalars().first()
-
-        if existing_item:
-            await session.delete(existing_item)
+            if existing_item:
+                existing_item.quantity += quantity
+            else:
+                new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+                session.add(new_item)
             await session.commit()
 
+    async def remove_item(self, session, product_type: str, product_id: int):
+        async with session.begin():
+            result = await session.execute(
+                select(CartItem).filter(
+                    CartItem.cart_id == self.id,
+                    CartItem.product_type == product_type,
+                    CartItem.product_id == product_id
+                )
+            )
+            existing_item = result.scalars().first()
+
+            if existing_item:
+                await session.delete(existing_item)
+                await session.commit()
+
     async def get_total_price(self, session) -> float:
-        """Ҳисоби нархи умумии сабад."""
         total_price = 0
         for item in self.items:
             product_model = globals().get(item.product_type.capitalize())
@@ -109,20 +106,17 @@ class Cart(Base):
         return total_price
 
 
-
-# Модели маҳсулот дар сабад
 class CartItem(Base):
     __tablename__ = 'cart_item'
 
     id = Column(Integer, primary_key=True, index=True)
-    product_type = Column(String(255), index=True)  # Навъи маҳсулот
-    product_id = Column(Integer, index=True)  # ID маҳсулот
-    quantity = Column(Integer, default=1)  # Миқдори маҳсулот
-    cart_id = Column(Integer, ForeignKey('cart.id'))  # ID сабад
-    cart = relationship("Cart", back_populates="items")  # Системаи алоқаманд бо Cart
+    product_type = Column(String(255), index=True)
+    product_id = Column(Integer, index=True)
+    quantity = Column(Integer, default=1)
+    cart_id = Column(Integer, ForeignKey('cart.id'))
+    cart = relationship("Cart", back_populates="items")
 
-    async def get_price(self) -> float:
-        session = SessionLocal()
+    async def get_price(self, session) -> float:
         """Ҳисоби нархи маҳсулот."""
         product_model = globals().get(self.product_type.capitalize())
         if product_model:
@@ -132,9 +126,7 @@ class CartItem(Base):
                 return product.price
         return 0
 
-    async def get_total_price(self) -> float:
-        session = SessionLocal()
-        """Нархи умумии ин маҳсулот."""
+    async def get_total_price(self, session) -> float:
         price = await self.get_price(session)
         return price * self.quantity
 
@@ -142,17 +134,19 @@ class CartItem(Base):
     async def increase_quantity(self, session, amount: int = 1):
         """Зиёд кардани миқдори маҳсулот."""
         self.quantity += amount
-        await session.commit()
+        async with session.begin():
+            await session.commit()
 
     async def decrease_quantity(self, session, amount: int = 1):
         """Кам кардани миқдори маҳсулот."""
         if self.quantity > amount:
             self.quantity -= amount
         else:
-            await session.delete(self)  # Агар миқдор ба 0 расад, маҳсулот нест мешавад
-        await session.commit()
+            async with session.begin():
+                await session.delete(self)  # Агар миқдор ба 0 расад, маҳсулот нест мешавад
+            await session.commit()
+
 
 async def init_db():
     async with engine.begin() as conn:
-        # Сохтани ҳамаи таблицаҳо дар база
         await conn.run_sync(Base.metadata.create_all)

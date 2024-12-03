@@ -305,7 +305,7 @@ async def handle_decrease(callback_query: CallbackQuery):
 
     async with SessionLocal() as session:
         # Retrieve the cart
-        cart_result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
         cart = cart_result.scalars().first()
 
         if not cart:
@@ -314,7 +314,7 @@ async def handle_decrease(callback_query: CallbackQuery):
 
         # Retrieve the cart item
         item_result = await session.execute(
-            select(CartItem).filter(
+            select(CartItem).where(
                 CartItem.cart_id == cart.id,
                 CartItem.product_type == product_type,
                 CartItem.product_id == product_id
@@ -329,13 +329,13 @@ async def handle_decrease(callback_query: CallbackQuery):
         # Decrease quantity or remove the item
         if item.quantity > 1:
             item.quantity -= 1
-            await session.commit()
         else:
             await session.delete(item)
-            await session.commit()
+
+        await session.commit()
 
         # Fetch updated cart
-        updated_cart_result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        updated_cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
         updated_cart = updated_cart_result.scalars().first()
 
         if updated_cart and updated_cart.items:

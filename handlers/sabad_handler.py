@@ -304,13 +304,16 @@ async def handle_decrease(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
 
     async with SessionLocal() as session:
-        async with session.begin():  # Ensure proper transaction
+        try:
+            # Get the cart
             result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
             cart = result.scalars().first()
+
             if not cart:
                 await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
                 return
 
+            # Get the product in the cart
             result = await session.execute(
                 select(CartItem).filter(
                     CartItem.cart_id == cart.id,
@@ -319,10 +322,12 @@ async def handle_decrease(callback_query: CallbackQuery):
                 )
             )
             item = result.scalars().first()
+
             if not item:
                 await callback_query.answer("Маҳсулот дар сабад нест!", show_alert=True)
                 return
 
+            # Decrease quantity or remove the item
             if item.quantity > 1:
                 item.quantity -= 1
             else:
@@ -330,34 +335,37 @@ async def handle_decrease(callback_query: CallbackQuery):
 
             await session.commit()
 
-            updated_cart = await session.execute(select(Cart).filter(Cart.user_id == user_id))
-            updated_cart = updated_cart.scalars().first()
+            # Update and fetch the cart
+            updated_cart_result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+            updated_cart = updated_cart_result.scalars().first()
 
             if updated_cart and updated_cart.items:
                 total_price = await updated_cart.get_total_price(session)
-                current_index = next((i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0)
-                updated_item = updated_cart.items[current_index]
+                updated_item = next((itm for itm in updated_cart.items if itm.product_id == product_id), None)
 
-                product_model = globals().get(updated_item.product_type.capitalize())
-                if not product_model:
-                    await callback_query.answer("Мушкил дар пайдо кардани маҳсулот!", show_alert=True)
+                if not updated_item:
+                    await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
                     return
 
+                product_model = globals().get(updated_item.product_type.capitalize())
                 result = await session.execute(select(product_model).filter(product_model.id == updated_item.product_id))
                 product = result.scalars().first()
+
                 if not product:
                     await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
                     return
 
-                keyboard = create_cart_keyboard(updated_cart, current_index, updated_item, total_price)
+                keyboard = create_cart_keyboard(updated_cart, updated_item, total_price)
                 new_text = (
                     f"{product.name}\n\n"
                     f"{product.description}\n\n"
                     f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
                 )
-
                 await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
             else:
                 await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
 
-    await callback_query.answer("Миқдор кам шуд!")
+            await callback_query.answer("Миқдор кам шуд!")
+        except Exception as e:
+            await callback_query.answer("Хато рух дод!", show_alert=True)
+            raise

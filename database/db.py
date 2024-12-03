@@ -14,7 +14,13 @@ db_url=os.getenv("DATABASE_URL")
 
 # Асинкронӣ пайвастшавӣ ба MySQL
 engine = create_async_engine(db_url, echo=True)
-SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+SessionLocal = async_sessionmaker(
+    engine, 
+    expire_on_commit=False, 
+    class_=AsyncSession
+)
 
 
 class Order(Base):

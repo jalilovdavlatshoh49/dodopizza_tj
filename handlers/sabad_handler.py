@@ -305,44 +305,65 @@ async def handle_decrease(callback_query: CallbackQuery):
 
     async with SessionLocal() as session:
         # Сабадро гиред
-        cart = await get_user_cart(user_id)
-        if cart:
-            # Миқдори маҳсулотро кам кунед
-            item = next((i for i in cart.items if i.product_id == product_id and i.product_type == product_type), None)
-            if item:
-                if item.quantity > 1:
-                    item.quantity -= 1
-                    await session.commit()
-                else:
-                    # Агар миқдор 1 бошад, онро аз сабад тоза кунед
-                    await cart.remove_item(session, product_type, product_id)
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
+            return
 
-                # Сабади навро гиред
-                updated_cart = await get_user_cart(user_id)
+        # Маҳсулоти лозимаро ҷустуҷӯ кунед
+        result = await session.execute(
+            select(CartItem).filter(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == product_type,
+                CartItem.product_id == product_id
+            )
+        )
+        item = result.scalars().first()
+        if not item:
+            await callback_query.answer("Маҳсулот дар сабад нест!", show_alert=True)
+            return
 
-                if updated_cart and updated_cart.items:
-                    total_price = await updated_cart.get_total_price(session)
-                    current_index = next((i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0)
-                    updated_item = updated_cart.items[current_index]
+        # Миқдорро кам кунед ё тоза кунед
+        if item.quantity > 1:
+            item.quantity -= 1
+        else:
+            session.delete(item)
 
-                    # Клавиатура ва матнро созед
-                    keyboard = create_cart_keyboard(updated_cart, current_index, updated_item, total_price)
+        await session.commit()
 
-                    # Матнро созед
-                    product_model = globals().get(updated_item.product_type.capitalize())
-                    product = await get_product_by_id(product_model, updated_item.product_id)
-                    new_text = (
-                        f"{product.name}\n\n"
-                        f"{product.description}\n\n"
-                        f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
-                    )
+        # Сабади навро гиред
+        updated_cart = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        updated_cart = updated_cart.scalars().first()
 
-                    # Танҳо дар ҳолати тағйир навсозӣ кунед
-                    if callback_query.message.caption != new_text or callback_query.message.reply_markup != keyboard.as_markup():
-                        await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
-                else:
-                    # Агар сабад холӣ бошад
-                    if callback_query.message.caption != "Сабади шумо холӣ аст.":
-                        await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
+        if updated_cart and updated_cart.items:
+            total_price = await updated_cart.get_total_price(session)
+
+            # Клавиатура ва матнро созед
+            current_index = next((i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0)
+            updated_item = updated_cart.items[current_index]
+
+            product_model = globals().get(updated_item.product_type.capitalize())
+            if not product_model:
+                await callback_query.answer("Мушкил дар пайдо кардани маҳсулот!", show_alert=True)
+                return
+
+            result = await session.execute(select(product_model).filter(product_model.id == updated_item.product_id))
+            product = result.scalars().first()
+            if not product:
+                await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+                return
+
+            keyboard = create_cart_keyboard(updated_cart, current_index, updated_item, total_price)
+
+            new_text = (
+                f"{product.name}\n\n"
+                f"{product.description}\n\n"
+                f"Нарх: {product.price} x {updated_item.quantity} = {product.price * updated_item.quantity} сомонӣ"
+            )
+
+            await callback_query.message.edit_caption(caption=new_text, reply_markup=keyboard.as_markup())
+        else:
+            await callback_query.message.edit_caption("Сабади шумо холӣ аст.", reply_markup=None)
 
     await callback_query.answer("Миқдор кам шуд!")

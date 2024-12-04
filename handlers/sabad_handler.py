@@ -317,7 +317,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
 
             # Send updated product details
-            product = await session.execute(select(Product).where(Product.id == product_id))
+            product = await session.execute(select(Cart).where(Cart.id == product_id))
             product = product.scalars().first()
 
             name = product.name

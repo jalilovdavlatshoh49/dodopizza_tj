@@ -315,7 +315,27 @@ async def increase_quantity(callback_query: CallbackQuery):
                 (i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0
             )
             keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
-            await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
+
+            # Send updated product details
+            product = await session.execute(select(Product).where(Product.id == product_id))
+            product = product.scalars().first()
+
+            name = product.name
+            description = product.description
+            price = product.price
+            quantity = item.quantity
+            total_price = price * quantity
+
+            text = (
+                f"{name}\n\n"
+                f"{description}\n\n"
+                f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
+            )
+
+            # Use edit_caption to update the product caption
+            await callback_query.message.edit_caption(
+                caption=text, reply_markup=keyboard.as_markup()
+            )
         else:
             # If cart is empty, show a default message
             await callback_query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[

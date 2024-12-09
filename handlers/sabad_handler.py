@@ -305,43 +305,28 @@ async def increase_quantity(callback_query: CallbackQuery):
         item.quantity += 1
         await session.commit()
 
-        # Fetch updated cart
-        updated_cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
-        updated_cart = updated_cart_result.scalars().first()
+            """Намоиши сабад ба корбар."""
+        user_id = message.from_user.id
+        cart = await get_user_cart(user_id)
 
-        if updated_cart and updated_cart.items:
-            total_price = await updated_cart.get_total_price(session)
-            current_index = next(
-                (i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0
-            )
-            keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
+        if not cart or not cart.items:
+        await message.answer("Сабади шумо холӣ аст.")
+        return
 
-            # Send updated product details
-            product = await session.execute(select(Cart).where(Cart.id == product_id))
-            product = product.scalars().first()
-            await session.close()
+        current_index = 0
+        item = cart.items[current_index]
+        product_model = globals().get(item.product_type.capitalize())
 
-            name = product.name
-            description = product.description
-            price = product.price
-            quantity = item.quantity
-            total_price = price * quantity
+        if not product_model:
+            await message.answer("Модели маҳсулот ёфт нашуд.")
+            return
 
-            text = (
-                f"{name}\n\n"
-                f"{description}\n\n"
-                f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
-            )
+        product = await get_product_by_id(product_model, item.product_id)
+        if not product:
+        await message.answer("Маҳсулот ёфт нашуд.")
+            return
 
-            # Use edit_caption to update the product caption
-            await callback_query.message.edit_caption(
-                caption=text, reply_markup=keyboard.as_markup()
-            )
-        else:
-            # If cart is empty, show a default message
-            await callback_query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Сабад холӣ аст!", callback_data="empty_cart")]
-            ]))
+        await send_cart_item_details(message, product, item, current_index, cart)
     
 
 

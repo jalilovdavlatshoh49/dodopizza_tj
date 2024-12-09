@@ -345,7 +345,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.answer("Маҳсулот ёфт нашуд.")
             return
 
-        await send_cart_item_details(callback_query.answer, product, item, current_index, cart)
+        await send_cart_item_details(callback_query, product, item, current_index, cart)
     
 
 

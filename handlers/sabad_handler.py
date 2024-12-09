@@ -322,7 +322,7 @@ async def increase_quantity(callback_query: CallbackQuery):
 
         product = await get_product_by_id(product_model, item.product_id)
         if not product:
-        await message.answer("Маҳсулот ёфт нашуд.")
+            await message.answer("Маҳсулот ёфт нашуд.")
             return
 
         await send_cart_item_details(message, product, item, current_index, cart)

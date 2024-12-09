@@ -305,8 +305,7 @@ async def increase_quantity(callback_query: CallbackQuery):
         item.quantity += 1
         await session.commit()
 
-            """Намоиши сабад ба корбар."""
-        user_id = message.from_user.id
+        
         cart = await get_user_cart(user_id)
 
         if not cart or not cart.items:

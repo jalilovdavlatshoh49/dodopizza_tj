@@ -242,7 +242,7 @@ async def send_cart_item_details(message, product, item, current_index, cart):
         photo=product.image_url, caption=text, reply_markup=keyboard.as_markup()
     )
 
-async def edit_send_cart_item_details(callback_query.answer, product, item, current_index, cart):
+async def edit_send_cart_item_details(callback_query, product, item, current_index, cart):
     """Маълумоти маҳсулотро ба корбар мефиристад."""
     name = product.name
     description = product.description

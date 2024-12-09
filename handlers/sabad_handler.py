@@ -242,6 +242,26 @@ async def send_cart_item_details(message, product, item, current_index, cart):
         photo=product.image_url, caption=text, reply_markup=keyboard.as_markup()
     )
 
+async def edit_send_cart_item_details(callback_query.answer, product, item, current_index, cart):
+    """Маълумоти маҳсулотро ба корбар мефиристад."""
+    name = product.name
+    description = product.description
+    price = product.price
+    quantity = item.quantity
+    total_price = price * quantity
+
+    keyboard = create_cart_keyboard(cart, current_index, item, total_price)
+
+    text = (
+        f"{name}\n\n"
+        f"{description}\n\n"
+        f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
+    )
+    await callback_query.answer.edit_photo(
+        photo=product.image_url, caption=text, reply_markup=keyboard.as_markup()
+    )
+
+
 
 # Хандлерҳо
 @sabad_router.message(Command("cart"))
@@ -309,7 +329,7 @@ async def increase_quantity(callback_query: CallbackQuery):
         cart = await get_user_cart(user_id)
 
         if not cart or not cart.items:
-            await message.answer("Сабади шумо холӣ аст.")
+            await callback_query.answer("Сабади шумо холӣ аст.")
             return
 
         current_index = 0
@@ -317,15 +337,15 @@ async def increase_quantity(callback_query: CallbackQuery):
         product_model = globals().get(item.product_type.capitalize())
 
         if not product_model:
-            await message.answer("Модели маҳсулот ёфт нашуд.")
+            await callback_query.answer("Модели маҳсулот ёфт нашуд.")
             return
 
         product = await get_product_by_id(product_model, item.product_id)
         if not product:
-            await message.answer("Маҳсулот ёфт нашуд.")
+            await callback_query.answer("Маҳсулот ёфт нашуд.")
             return
 
-        await send_cart_item_details(message, product, item, current_index, cart)
+        await send_cart_item_details(callback_query.answer, product, item, current_index, cart)
     
 
 

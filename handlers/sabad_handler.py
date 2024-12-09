@@ -1,16 +1,14 @@
 from aiogram import types, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery 
 from aiogram.filters import Command
+from aiogram.types import InputMediaPhoto
 from sqlalchemy.future import select
 from database.db import SessionLocal, Cart, CartItem
 from aiogram.utils.keyboard import InlineKeyboardBuilder 
 from sqlalchemy.orm import joinedload
 from database.tables import *
+
 sabad_router = Router()
-
-
-
-
 
 
 
@@ -242,6 +240,7 @@ async def send_cart_item_details(message, product, item, current_index, cart):
         photo=product.image_url, caption=text, reply_markup=keyboard.as_markup()
     )
 
+
 async def edit_send_cart_item_details(callback_query, product, item, current_index, cart):
     """Маълумоти маҳсулотро ба корбар мефиристад."""
     name = product.name
@@ -250,16 +249,26 @@ async def edit_send_cart_item_details(callback_query, product, item, current_ind
     quantity = item.quantity
     total_price = price * quantity
 
+    # Ташкили клавиатура
     keyboard = create_cart_keyboard(cart, current_index, item, total_price)
 
+    # Матни иттилоот
     text = (
         f"{name}\n\n"
         f"{description}\n\n"
         f"Нарх: {price} x {quantity} = {total_price} сомонӣ"
     )
-    await callback_query.answer.edit_photo(
-        photo=product.image_url, caption=text, reply_markup=keyboard.as_markup()
+
+    # Тағйири акс ва матн дар паём
+    await callback_query.message.edit_media(
+        media=InputMediaPhoto(
+            media=product.image_url,
+            caption=text
+        ),
+        reply_markup=keyboard.as_markup()
     )
+    # Ҷавоби callback барои пешгирии хато
+    await callback_query.answer()
 
 
 
@@ -345,7 +354,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.answer("Маҳсулот ёфт нашуд.")
             return
 
-        await send_cart_item_details(callback_query, product, item, current_index, cart)
+        await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
     
 
 

@@ -319,6 +319,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             # Send updated product details
             product = await session.execute(select(Cart).where(Cart.id == product_id))
             product = product.scalars().first()
+            await session.close()
 
             name = product.name
             description = product.description
@@ -341,8 +342,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Сабад холӣ аст!", callback_data="empty_cart")]
             ]))
-    await callback_query.answer("Миқдор зиёд карда шуд!")
-
+    
 
 
 

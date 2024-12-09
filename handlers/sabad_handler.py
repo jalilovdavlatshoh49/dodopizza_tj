@@ -398,31 +398,34 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await session.delete(item)
                 await session.commit()
                 message = "Маҳсулот аз сабад хориҷ карда шуд!"
+            
+            await callback_query.answer(message, show_alert=True)
+
         except Exception as e:
-            await callback_query.answer("Хатогӣ ҳангоми таҷдид: {}".format(str(e)), show_alert=True)
+            await callback_query.answer(f"Хатогӣ ҳангоми таҷдид: {str(e)}", show_alert=True)
             return
 
-        # Fetch updated cart and refresh the UI
-        updated_cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
-        updated_cart = updated_cart_result.scalars().first()
+        # Refresh the cart and update the view
+        cart_result = await session.execute(select(Cart).where(Cart.user_id == user_id))
+        cart = cart_result.scalars().first()
 
-        if updated_cart and updated_cart.items:
-            total_price = await updated_cart.get_total_price(session)
-            current_index = next(
-                (i for i, itm in enumerate(updated_cart.items) if itm.product_id == product_id), 0
-            )
-            keyboard = create_cart_keyboard(updated_cart, current_index, updated_cart.items[current_index], total_price)
-            await callback_query.message.edit_reply_markup(reply_markup=keyboard.as_markup())
-        else:
-            # If cart is empty, show a "cart is empty" message
-            await callback_query.message.edit_text(
-                text="Сабади шумо холӣ аст!",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Ба мағоза баргардед", callback_data="return_to_shop")]
-                ])
-            )
+        if not cart or not cart.items:
+            await callback_query.answer("Сабади шумо холӣ аст!", show_alert=True)
+            return
 
-    # Respond to the callback
-    await callback_query.answer(message)
+        # Display updated cart
+        current_index = 0
+        item = cart.items[current_index]
+        product_model = globals().get(item.product_type.capitalize())
 
+        if not product_model:
+            await callback_query.answer("Модели маҳсулот ёфт нашуд!", show_alert=True)
+            return
+
+        product = await get_product_by_id(product_model, item.product_id)
+        if not product:
+            await callback_query.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+            return
+
+        await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
         

@@ -309,8 +309,8 @@ async def increase_quantity(callback_query: CallbackQuery):
         cart = await get_user_cart(user_id)
 
         if not cart or not cart.items:
-        await message.answer("Сабади шумо холӣ аст.")
-        return
+            await message.answer("Сабади шумо холӣ аст.")
+            return
 
         current_index = 0
         item = cart.items[current_index]

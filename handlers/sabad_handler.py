@@ -37,12 +37,12 @@ async def get_keyboard(cart_item: CartItem):
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
         try:
-            async with session.begin():  # Ensures transaction management
+            async with session.begin():  # Барои кафолати идоракунии транзаксия
                 data = call.data.split("_")
                 category, product_id = data[1], int(data[2])
                 user_id = call.from_user.id
 
-                # Find or create cart
+                # Ёфтани сабад ё эҷод кардани сабади нав
                 result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
                 cart = result.scalars().first()
                 if not cart:
@@ -50,13 +50,13 @@ async def buy_product(call: types.CallbackQuery):
                     session.add(cart)
                     await session.flush()
 
-                # Validate product category
+                # Санҷиши дурустии категорияи маҳсулот
                 product_model = globals().get(category.capitalize())
                 if not product_model:
                     await call.answer("Категория ёфт нашуд!", show_alert=True)
                     return
 
-                # Find the product
+                # Ёфтани маҳсулот
                 result = await session.execute(
                     select(product_model).filter(product_model.id == product_id)
                 )
@@ -65,10 +65,10 @@ async def buy_product(call: types.CallbackQuery):
                     await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
                     return
 
-                # Add product to the cart
+                # Иловаи маҳсулот ба сабад
                 await cart.add_item(session, category, product_id)
 
-                # Update keyboard
+                # Навсозии клавиатура
                 result = await session.execute(
                     select(CartItem).where(
                         CartItem.cart_id == cart.id,

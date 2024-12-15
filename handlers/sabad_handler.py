@@ -70,16 +70,18 @@ async def buy_product(call: types.CallbackQuery):
                 await cart.add_item(session, category, product_id)
 
                 # Навсозии клавиатура
+                # Навсозии клавиатура
                 result = await session.execute(
-                    select(CartItem).where(
-                        CartItem.cart_id == cart.id,
-                        CartItem.product_type == category,
-                        CartItem.product_id == product_id
-                    )
-                )
+    select(CartItem).where(
+        CartItem.cart_id == cart.id,
+        CartItem.product_type == category,
+        CartItem.product_id == product_id
+    )
+)
                 cart_item = result.scalars().first()
                 if cart_item:
-                    keyboard = await get_keyboard(cart_item)
+                    # Pass the session explicitly to get the correct price
+                    keyboard = await get_keyboard(cart_item, session)  
                     await call.message.edit_reply_markup(reply_markup=keyboard)
                 else:
                     await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)

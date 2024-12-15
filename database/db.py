@@ -62,37 +62,33 @@ class Cart(Base):
     order = relationship("Order", back_populates="cart", uselist=False)
 
     async def add_item(self, session, product_type: str, product_id: int, quantity: int = 1):
-        async with session.begin():
-            result = await session.execute(
-                select(CartItem).filter(
-                    CartItem.cart_id == self.id,
-                    CartItem.product_type == product_type,
-                    CartItem.product_id == product_id
-                )
-            )
-            existing_item = result.scalars().first()
+        result = await session.execute(
+        select(CartItem).filter(
+            CartItem.cart_id == self.id,
+            CartItem.product_type == product_type,
+            CartItem.product_id == product_id
+        )
+    )
+        existing_item = result.scalars().first()
 
-            if existing_item:
-                existing_item.quantity += quantity
-            else:
-                new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
-                session.add(new_item)
-            await session.commit()
+        if existing_item:
+            existing_item.quantity += quantity
+        else:
+            new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+            session.add(new_item)
 
     async def remove_item(self, session, product_type: str, product_id: int):
-        async with session.begin():
-            result = await session.execute(
-                select(CartItem).filter(
-                    CartItem.cart_id == self.id,
-                    CartItem.product_type == product_type,
-                    CartItem.product_id == product_id
-                )
-            )
-            existing_item = result.scalars().first()
+        result = await session.execute(
+        select(CartItem).filter(
+            CartItem.cart_id == self.id,
+            CartItem.product_type == product_type,
+            CartItem.product_id == product_id
+        )
+    )
+        existing_item = result.scalars().first()
 
-            if existing_item:
-                await session.delete(existing_item)
-                await session.commit()
+        if existing_item:
+            await session.delete(existing_item)
 
     async def get_total_price(self, session) -> float:
         total_price = 0

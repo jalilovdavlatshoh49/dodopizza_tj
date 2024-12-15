@@ -37,7 +37,8 @@ async def get_keyboard(cart_item: CartItem):
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
         try:
-            async with session.begin():  # Барои кафолати идоракунии транзаксия
+            async with session.begin():
+                # Парсинг кардани маълумот
                 data = call.data.split("_")
                 category, product_id = data[1], int(data[2])
                 user_id = call.from_user.id

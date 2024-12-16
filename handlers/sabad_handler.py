@@ -81,7 +81,7 @@ async def buy_product(call: types.CallbackQuery):
                 cart_item = result.scalars().first()
                 if cart_item:
                     # Pass the session explicitly to get the correct price
-                    keyboard = await get_keyboard(cart_item, session)  
+                    keyboard = await get_keyboard(cart_item)  
                     await call.message.edit_reply_markup(reply_markup=keyboard)
                 else:
                     await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)

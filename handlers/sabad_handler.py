@@ -16,7 +16,7 @@ async def get_keyboard(cart_item: CartItem):
     session = SessionLocal()
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
     quantity = cart_item.quantity
-    price = await cart_item.get_price()  # Get the price using the async method
+    price = await cart_item.get_price(session)  # Get the price using the async method
     total_price = price * quantity  # Calculate total price
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [

@@ -529,3 +529,49 @@ async def show_next_item(callback_query: types.CallbackQuery):
 
     # Тағйири маълумот дар паём
     await edit_send_cart_item_details(callback_query, product, item, new_index, cart)
+
+
+@sabad_router.callback_query(lambda c: c.data and c.data.startswith("sabad:remove_"))
+async def remove_item_from_cart(callback_query: types.CallbackQuery):
+    """Хориҷ кардани маҳсулот аз сабад."""
+    user_id = callback_query.from_user.id
+    cart = await get_user_cart(user_id)
+
+    if not cart or not cart.items:
+        await callback_query.message.answer("Сабади шумо холӣ аст.")
+        return
+
+    # Иҷрои маълумот аз callback_data
+    data = callback_query.data.split("_")
+    try:
+        product_type = data[1]
+        product_id = int(data[2])
+    except (IndexError, ValueError):
+        await callback_query.answer("Хатои параметрҳои дохилӣ.", show_alert=True)
+        return
+
+    # Хориҷ кардани маҳсулот
+    async with SessionLocal() as session:
+        await cart.remove_item(session, product_type, product_id)
+        await session.commit()
+
+    # Аз нав санҷидани сабад
+    cart = await get_user_cart(user_id)
+    if not cart or not cart.items:
+        await callback_query.message.edit_text("Сабади шумо холӣ аст.")
+        return
+
+    # Намоиши маҳсулоти аввали навшуда
+    item = cart.items[0]
+    product_model = globals().get(item.product_type.capitalize())
+    if not product_model:
+        await callback_query.answer("Модели маҳсулот ёфт нашуд.", show_alert=True)
+        return
+
+    product = await get_product_by_id(product_model, item.product_id)
+    if not product:
+        await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+        return
+
+    await edit_send_cart_item_details(callback_query, product, item, 0, cart)
+    await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.")

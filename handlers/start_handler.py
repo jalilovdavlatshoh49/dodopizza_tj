@@ -70,13 +70,13 @@ async def category_handler(callback_query: types.CallbackQuery):
 
                 displayed_products += 1
 
-                text = f"📋 Аз {total_products} намуди маҳсулот, {displayed_products} нишон дода шуд."
+            text = f"📋 Аз {total_products} намуди маҳсулот, {displayed_products} нишон дода шуд."
 
-                exit_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            exit_keyboard = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="Назад", callback_data="exit_to_main_menu")]
                 ])
 
-                await callback_query.message.answer(text=text, reply_markup=exit_keyboard, parse_mode="Markdown")
+            await callback_query.message.answer(text=text, reply_markup=exit_keyboard, parse_mode="Markdown")
         else:
             await callback_query.message.answer("Маҳсулот дар ин категория ёфт нашуд.")
 

@@ -153,7 +153,7 @@ async def decrease_quantity(call: types.CallbackQuery):
             return
 
         # Уменьшение количества или удаление товара
-        if cart_item.quantity > 1:
+        if cart_item.quantity >= 1:
             cart_item.quantity -= 1
             await session.commit()
             await session.close()

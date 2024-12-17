@@ -215,7 +215,7 @@ def create_cart_keyboard(cart, current_index, item, total_price):
             text="⬅️", callback_data=f"sabad:prev_{current_index}"
         ),
         InlineKeyboardButton(
-            text=f"{current_index + 1}/{len(cart.items)}", callback_data="noop"
+            text=f"{current_index}/{len(cart.items)}", callback_data="noop"
         ),
         InlineKeyboardButton(
             text="➡️", callback_data=f"sabad:next_{current_index}"
@@ -491,3 +491,41 @@ async def show_previous_item(callback_query: types.CallbackQuery):
             
         
         
+
+
+
+@sabad_router.callback_query(lambda c: c.data and c.data.startswith("sabad:next_"))
+async def show_next_item(callback_query: types.CallbackQuery):
+    """Намоиши маҳсулоти оянда аз сабад."""
+    user_id = callback_query.from_user.id
+    cart = await get_user_cart(user_id)
+
+    if not cart or not cart.items:
+        await callback_query.message.answer("Сабади шумо холӣ аст.")
+        return
+
+    # Иҷрои current_index аз callback_data
+    data = callback_query.data.split("_")
+    try:
+        current_index = int(data[1])
+    except (IndexError, ValueError):
+        await callback_query.answer("Хатои параметрҳои дохилӣ.", show_alert=True)
+        return
+
+    # Ҳисоби индекси нав
+    new_index = (current_index + 1) % len(cart.items)
+    item = cart.items[new_index]
+
+    # Ёфтани модели маҳсулот
+    product_model = globals().get(item.product_type.capitalize())
+    if not product_model:
+        await callback_query.answer("Модели маҳсулот ёфт нашуд.", show_alert=True)
+        return
+
+    product = await get_product_by_id(product_model, item.product_id)
+    if not product:
+        await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
+        return
+
+    # Тағйири маълумот дар паём
+    await edit_send_cart_item_details(callback_query, product, item, new_index, cart)

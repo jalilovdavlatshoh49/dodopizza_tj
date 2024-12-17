@@ -400,7 +400,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
             return
 
         # Decrease the quantity or remove the item
-        if item.quantity > 1:
+        if item.quantity >= 1:
             item.quantity -= 1
             await session.commit()
             
@@ -425,7 +425,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
 
             await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
 
-        else:
+        if item.quantity < 1:
             await session.delete(item)
             await session.commit()
             message = "Маҳсулот аз сабад хориҷ карда шуд!"

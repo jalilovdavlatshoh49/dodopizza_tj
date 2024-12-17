@@ -104,3 +104,9 @@ async def my_info_handler(message: types.Message):
 
     # Фиристодани паём бо клавиатура
     await message.answer(info_text, reply_markup=keyboard)
+
+
+@reply_router.callback_query(lambda c: c.data == "continue_shopping")
+async def continue_shopping_handler(callback_query: types.CallbackQuery):
+    keyboard = await get_category_keyboard()
+    await callback_query.message.answer("Категорияҳоро интихоб кунед:", reply_markup=keyboard)

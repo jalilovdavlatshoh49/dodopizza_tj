@@ -425,11 +425,30 @@ async def decrease_quantity(callback_query: CallbackQuery):
 
             await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
 
-        if item.quantity < 1:
+        else:
             await session.delete(item)
             await session.commit()
             message = "Маҳсулот аз сабад хориҷ карда шуд!"
-            await callback_query.answer(message, show_alert=True)
+            
+            cart = await get_user_cart(user_id)
 
+            if not cart or not cart.items:
+                await callback_query.answer("Сабади шумо холӣ аст.")
+                return
+
+            current_index = 0
+            item = cart.items[current_index]
+            product_model = globals().get(item.product_type.capitalize())
+
+            if not product_model:
+                await callback_query.answer("Модели маҳсулот ёфт нашуд.")
+                return
+
+            product = await get_product_by_id(product_model, item.product_id)
+            if not product:
+                await callback_query.answer("Маҳсулот ёфт нашуд.")
+                return
+
+            await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
         
         

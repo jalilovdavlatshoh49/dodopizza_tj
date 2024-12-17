@@ -429,7 +429,8 @@ async def decrease_quantity(callback_query: CallbackQuery):
             await session.delete(item)
             await session.commit()
             message = "Маҳсулот аз сабад хориҷ карда шуд!"
-            
+            # Нест кардани паём
+            await callback_query.message.delete()
             cart = await get_user_cart(user_id)
 
             if not cart or not cart.items:
@@ -449,6 +450,6 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await callback_query.answer("Маҳсулот ёфт нашуд.")
                 return
 
-            await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
+            
         
         

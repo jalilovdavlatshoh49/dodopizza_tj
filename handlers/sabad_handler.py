@@ -400,7 +400,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
             return
 
         # Decrease the quantity or remove the item
-        if item.quantity >= 1:
+        if item.quantity > 1:
             item.quantity -= 1
             await session.commit()
             

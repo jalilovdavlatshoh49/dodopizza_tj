@@ -434,7 +434,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
             cart = await get_user_cart(user_id)
 
             if not cart or not cart.items:
-                await callback_query.answer("Сабади шумо холӣ аст.")
+                await callback_query.message.answer("Сабади шумо холӣ аст.")
                 return
 
             current_index = 0
@@ -442,12 +442,12 @@ async def decrease_quantity(callback_query: CallbackQuery):
             product_model = globals().get(item.product_type.capitalize())
 
             if not product_model:
-                await callback_query.answer("Модели маҳсулот ёфт нашуд.")
+                await callback_query.message.answer("Модели маҳсулот ёфт нашуд.")
                 return
 
             product = await get_product_by_id(product_model, item.product_id)
             if not product:
-                await callback_query.answer("Маҳсулот ёфт нашуд.")
+                await callback_query.message.answer("Маҳсулот ёфт нашуд.")
                 return
 
 

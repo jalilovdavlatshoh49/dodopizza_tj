@@ -215,7 +215,7 @@ def create_cart_keyboard(cart, current_index, item, total_price):
             text="⬅️", callback_data=f"sabad:prev_{current_index}"
         ),
         InlineKeyboardButton(
-            text=f"{current_index}/{len(cart.items)}", callback_data="noop"
+            text=f"{current_index + 1}/{len(cart.items) - 1}", callback_data="noop"
         ),
         InlineKeyboardButton(
             text="➡️", callback_data=f"sabad:next_{current_index}"

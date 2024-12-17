@@ -160,7 +160,7 @@ async def decrease_quantity(call: types.CallbackQuery):
 
             # Обновление клавиатуры для измененного товара
             await call.message.edit_reply_markup(reply_markup=await get_keyboard(cart_item))
-        else:
+        if cart_item.quantity = 1:
             # Удаление товара
             session.delete(cart_item)
             await session.commit()

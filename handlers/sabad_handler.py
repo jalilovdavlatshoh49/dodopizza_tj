@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.filters import Command
 from aiogram.types import InputMediaPhoto
 from sqlalchemy.future import select
-from database.db import SessionLocal, Cart, CartItem, calculate_total_user_spending
+from database.db import SessionLocal, Cart, CartItem, calculate_total_user_spending, calculate_total_price_pending_cart
 from aiogram.utils.keyboard import InlineKeyboardBuilder 
 from sqlalchemy.orm import joinedload
 from database.tables import *
@@ -239,7 +239,7 @@ async def send_cart_item_details(message, product, item, current_index, cart, us
     price = product.price
     quantity = item.quantity
     total_price = price * quantity
-    total_user_spending = await calculate_total_user_spending(user_id)
+    total_user_spending = await calculate_total_price_pending_cart(user_id)
 
     keyboard = create_cart_keyboard(cart, current_index, item, total_user_spending)
 
@@ -260,7 +260,7 @@ async def edit_send_cart_item_details(callback_query, product, item, current_ind
     price = product.price
     quantity = item.quantity
     total_price = price * quantity
-    total_user_spending = await calculate_total_user_spending(user_id)
+    total_user_spending = await calculate_total_price_pending_cart(user_id)
 
     # Ташкили клавиатура
     keyboard = create_cart_keyboard(cart, current_index, item, total_user_spending)
@@ -422,7 +422,7 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.answer("Маҳсулот ёфт нашуд.")
             return
 
-        await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
+        await edit_send_cart_item_details(callback_query, product, item, current_index, cart, user_id)
     
 
 
@@ -480,7 +480,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await callback_query.answer("Маҳсулот ёфт нашуд.")
                 return
 
-            await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
+            await edit_send_cart_item_details(callback_query, product, item, current_index, cart, user_id)
 
         else:
             await session.delete(item)

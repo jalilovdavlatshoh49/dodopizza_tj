@@ -12,12 +12,12 @@ sabad_router = Router()
 
 
 
-async def get_keyboard(cart_item: CartItem):
+async def get_keyboard(cart_item: CartItem, user_id):
     session = SessionLocal()
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
     quantity = cart_item.quantity
     price = await cart_item.get_price(session)  # Get the price using the async method
-    total_price = await calculate_total_price_pending_cart  # Calculate total price
+    total_price = await calculate_total_price_pending_cart(user_id)  # Calculate total price
     keyboard = InlineKeyboardMarkup(inline_keyboard=[           [
 InlineKeyboardButton(text=f"Харид {price} сомонӣ", callback_data=f"buy_{cart_item.product_type}_{cart_item.product_id}")],
 
@@ -84,7 +84,7 @@ async def buy_product(call: types.CallbackQuery):
                 cart_item = result.scalars().first()
                 if cart_item:
                     # Pass the session explicitly to get the correct price
-                    keyboard = await get_keyboard(cart_item)  
+                    keyboard = await get_keyboard(cart_item, user_id)  
                     await call.message.edit_reply_markup(reply_markup=keyboard)
                 else:
                     await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
@@ -119,7 +119,7 @@ async def increase_quantity(call: types.CallbackQuery):
             cart_item = result.scalars().first()  # Истифодаи first ба ҷои next
 
         if cart_item:
-            keyboard = await get_keyboard(cart_item)
+            keyboard = await get_keyboard(cart_item, user_id)
             await call.message.edit_reply_markup(reply_markup=keyboard)
         else:
             await call.answer("Маҳсулоти дархостшуда ёфт нашуд!", show_alert=True)
@@ -161,7 +161,7 @@ async def decrease_quantity(call: types.CallbackQuery):
             await session.close()
 
             # Обновление клавиатуры для измененного товара
-            await call.message.edit_reply_markup(reply_markup=await get_keyboard(cart_item))
+            await call.message.edit_reply_markup(reply_markup=await get_keyboard(cart_item, user_id))
         if cart_item.quantity < 1:
             # Удаление товара
             session.delete(cart_item)

@@ -337,15 +337,14 @@ async def reply_show_cart(message: types.Message):
     await send_cart_item_details(message, product, item, current_index, cart)
 
 
-# Ҳолати идоракунии "Сабад"
 @sabad_router.callback_query(lambda c: c.data == "view_cart")
-async def view_cart_show_cart(message: types.Message):
+async def view_cart_show_cart(callback_query: types.CallbackQuery):
     """Намоиши сабад ба корбар."""
-    user_id = message.from_user.id
+    user_id = callback_query.from_user.id
     cart = await get_user_cart(user_id)
 
     if not cart or not cart.items:
-        await message.answer("Сабади шумо холӣ аст.")
+        await callback_query.message.answer("Сабади шумо холӣ аст.")
         return
 
     current_index = 0
@@ -353,15 +352,15 @@ async def view_cart_show_cart(message: types.Message):
     product_model = globals().get(item.product_type.capitalize())
 
     if not product_model:
-        await message.answer("Модели маҳсулот ёфт нашуд.")
+        await callback_query.message.answer("Модели маҳсулот ёфт нашуд.")
         return
 
     product = await get_product_by_id(product_model, item.product_id)
     if not product:
-        await message.answer("Маҳсулот ёфт нашуд.")
+        await callback_query.message.answer("Маҳсулот ёфт нашуд.")
         return
 
-    await send_cart_item_details(message, product, item, current_index, cart)
+    await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
 
 
 

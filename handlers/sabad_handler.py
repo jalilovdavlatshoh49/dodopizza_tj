@@ -203,11 +203,11 @@ def create_cart_keyboard(cart, current_index, item, total_price):
             text="❌", callback_data=f"sabad:remove_{item.product_type}_{item.product_id}"
         ),
         InlineKeyboardButton(
-            text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}"
+            text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}-{current_index}"
         ),
         InlineKeyboardButton(text=f"{item.quantity}", callback_data="noop"),
         InlineKeyboardButton(
-            text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}"
+            text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}-{current_index}"
         ),
     )
     keyboard.row(
@@ -405,7 +405,13 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.answer("Сабади шумо холӣ аст.")
             return
 
-        current_index = 0
+        # Иҷрои current_index аз callback_data
+        data = callback_query.data.split("-")
+        
+        current_index = int(data[1])
+        
+
+        
         item = cart.items[current_index]
         product_model = globals().get(item.product_type.capitalize())
 
@@ -463,7 +469,11 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await callback_query.answer("Сабади шумо холӣ аст.")
                 return
 
-            current_index = 0
+            # Иҷрои current_index аз callback_data
+            data = callback_query.data.split("-")
+        
+            current_index = int(data[1])
+        
             item = cart.items[current_index]
             product_model = globals().get(item.product_type.capitalize())
 

@@ -169,6 +169,37 @@ async def calculate_total_user_spending(user_id: int) -> float:
         return total_spending
 
 
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
+
+async def calculate_total_price_pending_cart(user_id: int) -> float:
+    """
+    Ҳисоб кардани нархи умумии ҳамаи сабадҳое, ки то ҳол фармоиш нашудаанд.
+
+    :param user_id: ID-и корбар.
+    :return: Нархи умумии сабадҳои то ҳол фармоишнашуда.
+    """
+    async with SessionLocal() as session:
+        total_price = 0.0
+
+        # Сабадҳои то ҳол фармоишнашудаи корбарро ёфтан
+        result = await session.execute(
+            select(Cart)
+            .filter(Cart.user_id == user_id)
+            .filter(Cart.order == None)  # Сабадҳое, ки фармоиш надоранд
+            .options(joinedload(Cart.items))  # Пешакӣ бор кардани ашёҳои сабад
+        )
+        carts = result.scalars().all()
+
+        # Ҳисоб кардани нархи умумии ҳамаи ашёҳои сабадҳои ёфтшуда
+        for cart in carts:
+            total_price += await cart.get_total_price(session)
+
+        return total_price
+
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

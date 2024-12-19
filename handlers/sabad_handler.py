@@ -338,7 +338,7 @@ async def reply_show_cart(message: types.Message):
 
 
 # Ҳолати идоракунии "Сабад"
-@sabad_router.callback_query(lambda c: c.data == "view_cart"):
+@sabad_router.callback_query(lambda c: c.data == "view_cart")
 async def view_cart_show_cart(message: types.Message):
     """Намоиши сабад ба корбар."""
     user_id = message.from_user.id

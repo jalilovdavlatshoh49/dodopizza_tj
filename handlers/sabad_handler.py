@@ -203,11 +203,11 @@ def create_cart_keyboard(cart, current_index, item, total_price):
             text="❌", callback_data=f"sabad:remove_{item.product_type}_{item.product_id}"
         ),
         InlineKeyboardButton(
-            text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}-{current_index}"
+            text="➖", callback_data=f"sabad:decrease_{item.product_type}_{item.product_id}_{current_index}"
         ),
         InlineKeyboardButton(text=f"{item.quantity}", callback_data="noop"),
         InlineKeyboardButton(
-            text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}-{current_index}"
+            text="➕", callback_data=f"sabad:increase_{item.product_type}_{item.product_id}_{current_index}"
         ),
     )
     keyboard.row(
@@ -367,7 +367,7 @@ async def view_cart_show_cart(callback_query: types.CallbackQuery):
 @sabad_router.callback_query(lambda c: c.data.startswith('sabad:increase_'))
 async def increase_quantity(callback_query: CallbackQuery):
     """Миқдори маҳсулотро зиёд мекунад."""
-    _, product_type, product_id = callback_query.data.split("_")
+    _, product_type, product_id, current_index = callback_query.data.split("_")
     product_id = int(product_id)
     user_id = callback_query.from_user.id
 
@@ -405,11 +405,6 @@ async def increase_quantity(callback_query: CallbackQuery):
             await callback_query.answer("Сабади шумо холӣ аст.")
             return
 
-        # Иҷрои current_index аз callback_data
-        data = callback_query.data.split("-")
-        
-        current_index = int(data[1])
-        
 
         
         item = cart.items[current_index]
@@ -431,7 +426,7 @@ async def increase_quantity(callback_query: CallbackQuery):
 
 @sabad_router.callback_query(lambda c: c.data.startswith('sabad:decrease_'))
 async def decrease_quantity(callback_query: CallbackQuery):
-    _, product_type, product_id = callback_query.data.split("_")
+    _, product_type, product_id, current_index = callback_query.data.split("_")
     product_id = int(product_id)
     user_id = callback_query.from_user.id
 
@@ -469,11 +464,6 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await callback_query.answer("Сабади шумо холӣ аст.")
                 return
 
-            # Иҷрои current_index аз callback_data
-            data = callback_query.data.split("-")
-        
-            current_index = int(data[1])
-        
             item = cart.items[current_index]
             product_model = globals().get(item.product_type.capitalize())
 
@@ -500,7 +490,7 @@ async def decrease_quantity(callback_query: CallbackQuery):
                 await callback_query.message.answer("Сабади шумо холӣ аст.")
                 return
 
-            current_index = 0
+            
             item = cart.items[current_index]
             product_model = globals().get(item.product_type.capitalize())
 

@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.filters import Command
 from aiogram.types import InputMediaPhoto
 from sqlalchemy.future import select
-from database.db import SessionLocal, Cart, CartItem
+from database.db import SessionLocal, Cart, CartItem, calculate_total_user_spending
 from aiogram.utils.keyboard import InlineKeyboardBuilder 
 from sqlalchemy.orm import joinedload
 from database.tables import *
@@ -232,15 +232,16 @@ def create_cart_keyboard(cart, current_index, item, total_price):
     return keyboard
 
 
-async def send_cart_item_details(message, product, item, current_index, cart):
+async def send_cart_item_details(message, product, item, current_index, cart, user_id):
     """Маълумоти маҳсулотро ба корбар мефиристад."""
     name = product.name
     description = product.description
     price = product.price
     quantity = item.quantity
     total_price = price * quantity
+    total_user_spending = await calculate_total_user_spending(user_id)
 
-    keyboard = create_cart_keyboard(cart, current_index, item, total_price)
+    keyboard = create_cart_keyboard(cart, current_index, item, total_user_spending)
 
     text = (
         f"{name}\n\n"
@@ -252,16 +253,17 @@ async def send_cart_item_details(message, product, item, current_index, cart):
     )
 
 
-async def edit_send_cart_item_details(callback_query, product, item, current_index, cart):
+async def edit_send_cart_item_details(callback_query, product, item, current_index, cart, user_id):
     """Маълумоти маҳсулотро ба корбар мефиристад."""
     name = product.name
     description = product.description
     price = product.price
     quantity = item.quantity
     total_price = price * quantity
+    total_user_spending = await calculate_total_user_spending(user_id)
 
     # Ташкили клавиатура
-    keyboard = create_cart_keyboard(cart, current_index, item, total_price)
+    keyboard = create_cart_keyboard(cart, current_index, item, total_user_spending)
 
     # Матни иттилоот
     text = (
@@ -307,7 +309,7 @@ async def show_cart(message: types.Message):
         await message.answer("Маҳсулот ёфт нашуд.")
         return
 
-    await send_cart_item_details(message, product, item, current_index, cart)
+    await send_cart_item_details(message, product, item, current_index, cart, user_id)
 
 
 # Ҳолати идоракунии "Сабад"
@@ -334,7 +336,7 @@ async def reply_show_cart(message: types.Message):
         await message.answer("Маҳсулот ёфт нашуд.")
         return
 
-    await send_cart_item_details(message, product, item, current_index, cart)
+    await send_cart_item_details(message, product, item, current_index, cart, user_id)
 
 
 @sabad_router.callback_query(lambda c: c.data == "view_cart")
@@ -360,7 +362,7 @@ async def view_cart_show_cart(callback_query: types.CallbackQuery):
         await callback_query.message.answer("Маҳсулот ёфт нашуд.")
         return
 
-    await send_cart_item_details(callback_query.message, product, item, current_index, cart)
+    await send_cart_item_details(callback_query.message, product, item, current_index, cart, user_id)
 
 
 

@@ -12,34 +12,8 @@ async def menu_handler(message: types.Message):
     keyboard = await get_category_keyboard()
     await message.answer("Категорияҳоро интихоб кунед:", reply_markup=keyboard)
 
-# Ҳолати идоракунии "Сабад"
-@reply_router.message(F.text == "Сабад")
-async def cart_handler(message: types.Message):
-    session = SessionLocal()
-    user_id = message.from_user.id
-    cart_items = await get_cart_items(user_id)  # Сабадро барои истифодабаранда мегирем
 
-    if not cart_items:
-        await message.answer("Сабад холӣ аст.")
-        return
 
-    # Намоиши маълумотҳо бо суратҳо
-    media_group = []
-    text = f"Маҳсулотҳои сабад:\n\n"
-    for item in cart_items:
-        item_text = (
-            f"{item['name']}\n"
-            f"Нарх: {item['price']} сомонӣ\n"
-            f"Миқдор: {item['quantity']}\n"
-            f"Ҷамъ: {item['price'] * item['quantity']} сомонӣ\n\n"
-        )
-        text += item_text
-        if item["image_url"]:
-            media_group.append(InputMediaPhoto(media=item["image_url"], caption=item_text))
-
-    if media_group:
-        await message.answer_media_group(media_group)
-    await message.answer(text)
 
 
 

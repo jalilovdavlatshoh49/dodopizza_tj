@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import joinedload
 from database.tables import *
 import os
 from dotenv import load_dotenv
@@ -170,9 +171,6 @@ async def calculate_total_user_spending(user_id: int) -> float:
 
 
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload
 
 async def calculate_total_price_pending_cart(user_id: int) -> float:
     """
@@ -191,7 +189,7 @@ async def calculate_total_price_pending_cart(user_id: int) -> float:
             .filter(Cart.order == None)  # Сабадҳое, ки фармоиш надоранд
             .options(joinedload(Cart.items))  # Пешакӣ бор кардани ашёҳои сабад
         )
-        carts = result.scalars().all()
+        carts = result.unique().scalars().all()  # Ба натиҷаҳо .unique() татбиқ кардан
 
         # Ҳисоб кардани нархи умумии ҳамаи ашёҳои сабадҳои ёфтшуда
         for cart in carts:

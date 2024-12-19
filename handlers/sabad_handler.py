@@ -360,7 +360,7 @@ async def view_cart_show_cart(callback_query: types.CallbackQuery):
         await callback_query.message.answer("Маҳсулот ёфт нашуд.")
         return
 
-    await edit_send_cart_item_details(callback_query, product, item, current_index, cart)
+    await send_cart_item_details(callback_query.message, product, item, current_index, cart)
 
 
 

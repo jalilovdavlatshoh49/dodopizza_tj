@@ -17,7 +17,7 @@ async def get_keyboard(cart_item: CartItem):
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
     quantity = cart_item.quantity
     price = await cart_item.get_price(session)  # Get the price using the async method
-    total_price = price * quantity  # Calculate total price
+    total_price = await calculate_total_price_pending_cart  # Calculate total price
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="-", callback_data=f"decrease_{cart_item.product_type}_{cart_item.product_id}"),

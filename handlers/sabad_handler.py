@@ -369,6 +369,7 @@ async def increase_quantity(callback_query: CallbackQuery):
     """Миқдори маҳсулотро зиёд мекунад."""
     _, product_type, product_id, current_index = callback_query.data.split("_")
     product_id = int(product_id)
+    current_index = int(current_index)
     user_id = callback_query.from_user.id
 
     async with SessionLocal() as session:
@@ -428,6 +429,7 @@ async def increase_quantity(callback_query: CallbackQuery):
 async def decrease_quantity(callback_query: CallbackQuery):
     _, product_type, product_id, current_index = callback_query.data.split("_")
     product_id = int(product_id)
+    current_index = int(current_index)
     user_id = callback_query.from_user.id
 
     async with SessionLocal() as session:

@@ -143,6 +143,30 @@ class CartItem(Base):
             await session.commit()
 
 
+
+async def calculate_total_user_spending(session: AsyncSession, user_id: int) -> float:
+    """
+    Ҳисоб кардани нархи умумии хариди як клиент.
+    
+    :param session: Сессияи асинхронии SQLAlchemy.
+    :param user_id: ID-и корбар.
+    :return: Нархи умумии хариди корбар.
+    """
+    total_spending = 0.0
+
+    # Ҳамаи фармоишҳои корбарро гирд овардан
+    result = await session.execute(
+        select(Order).filter(Order.user_id == user_id)
+    )
+    orders = result.scalars().all()
+
+    # Ҳисоб кардани нархи умумии ҳар як сабад
+    for order in orders:
+        total_spending += await order.cart.get_total_price(session)
+
+    return total_spending
+
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

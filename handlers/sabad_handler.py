@@ -544,7 +544,7 @@ async def show_previous_item(callback_query: types.CallbackQuery):
         return
 
     # Тағйири маълумот дар паём
-    await edit_send_cart_item_details(callback_query, product, item, new_index, cart)
+    await edit_send_cart_item_details(callback_query, product, item, new_index, cart, user_id)
             
         
         
@@ -585,7 +585,7 @@ async def show_next_item(callback_query: types.CallbackQuery):
         return
 
     # Тағйири маълумот дар паём
-    await edit_send_cart_item_details(callback_query, product, item, new_index, cart)
+    await edit_send_cart_item_details(callback_query, product, item, new_index, cart, user_id)
 
 
 @sabad_router.callback_query(lambda c: c.data and c.data.startswith("sabad:remove_"))
@@ -630,5 +630,5 @@ async def remove_item_from_cart(callback_query: types.CallbackQuery):
         await callback_query.answer("Маҳсулот ёфт нашуд.", show_alert=True)
         return
 
-    await edit_send_cart_item_details(callback_query, product, item, 0, cart)
+    await edit_send_cart_item_details(callback_query, product, item, 0, cart, user_id)
     await callback_query.answer("Маҳсулот аз сабад хориҷ шуд.")

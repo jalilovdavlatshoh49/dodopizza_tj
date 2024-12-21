@@ -32,31 +32,26 @@ class UserDataStates(StatesGroup):
 async def save_address_and_finish(message: types.Message, state: FSMContext, session: AsyncSession, address: str):
     user_id = message.from_user.id
     user_data = await state.get_data()
-    
+
     # Сабт кардани маълумот ба база
     new_order = Order(
-        cart=None,  # Агар cart лозим бошад, муаян кунед
+        cart=None,  # Агар cart лозим бошад, муайян кунед
         customer_name=user_data.get("customer_name"),
         phone_number=user_data.get("phone_number"),
         user_id=user_id,
         address=address
     )
     session.add(new_order)
-    async with session.begin():
-        await session.commit()
+    
+    # Ҳамзамон commit() истифода мебарем
+    await session.commit()
 
+    # Ҳолати истифодабарандаро тоза мекунем
     await state.clear()
     await message.answer("Маълумот бо муваффақият сабт шуд.", reply_markup=main_keyboard)
 
-# Клавиатураи интихоб барои иваз кардани суроға
-address_edit_method_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Иваз кардани суроға (дастӣ)")],
-        [KeyboardButton(text="Иваз кардани суроға (бо харита)", request_location=True)],
-        [KeyboardButton(text="Бозгашт")]
-    ],
-    resize_keyboard=True
-)
+
+
 
 # Клавиатураи интихоб барои иваз кардан
 edit_options_keyboard = ReplyKeyboardMarkup(
@@ -154,21 +149,19 @@ async def choose_manual_address(message: types.Message, state: FSMContext):
     )
 
 
-
 # Handler for manual address input
 @reply_router.message(UserDataStates.input_address_manual)
 async def input_manual_address_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     async with SessionLocal() as session:
+        # Сабти маълумот ба база
         await save_address_and_finish(
             message=message, 
             state=state, 
             session=session, 
             address=message.text
         )
-        
 
-    async with SessionLocal() as session:
         # Ҷустуҷӯи маълумотҳои корбар
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_data = result.scalars().first()
@@ -181,17 +174,29 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
             )
             await message.answer(text, reply_markup=edit_delete_keyboard)
         else:
-            
             await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
+
+# Клавиатураи интихоб барои иваз кардани суроға
+address_edit_method_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Иваз кардани суроға (дастӣ)")],
+        [KeyboardButton(text="Иваз кардани суроға (бо харита)", request_location=True)],
+        [KeyboardButton(text="Бозгашт")]
+    ],
+    resize_keyboard=True
+)
 
 # Handler for location-based address input
 @reply_router.message(UserDataStates.choose_address_method)
 async def input_location_address_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    if message.location:  # Check if the message contains a location
+
+    # Санҷиши оё корбар ҷойгиршавӣ фиристодааст
+    if message.location:
         location = message.location
         address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
-        
+
+        # Сабт кардани маълумот
         async with SessionLocal() as session:
             await save_address_and_finish(
                 message=message, 
@@ -199,27 +204,25 @@ async def input_location_address_handler(message: Message, state: FSMContext):
                 session=session, 
                 address=address
             )
-    
-    
+
+            # Ҷустуҷӯи маълумотҳои корбар
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_data = result.scalars().first()
+
+            if user_data:
+                text = (
+                    f"Ном: {user_data.customer_name}\n"
+                    f"Рақами телефон: {user_data.phone_number}\n"
+                    f"Суроға: {user_data.address or 'Номаълум'}"
+                )
+                await message.answer(text, reply_markup=edit_delete_keyboard)
+            else:
+                await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
+
     else:
-        await message.answer("Please send your location.")
-
-    async with SessionLocal() as session:
-        # Ҷустуҷӯи маълумотҳои корбар
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_data = result.scalars().first()
-
-        if user_data:
-            text = (
-                f"Ном: {user_data.customer_name}\n"
-                f"Рақами телефон: {user_data.phone_number}\n"
-                f"Суроға: {user_data.address or 'Номаълум'}"
-            )
-            await message.answer(text, reply_markup=edit_delete_keyboard)
-        else:
-            
-            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
-
+        # Агар ҷойгиршавӣ фиристода нашавад
+        await message.answer("Лутфан ҷойгиршавии худро фиристед.")
+        # Ҳолати FSM-и корбарро тоза намекунем, то ӯ боз кӯшиш кунад
 
 
 @reply_router.message(F.text == "Иваз кардан")

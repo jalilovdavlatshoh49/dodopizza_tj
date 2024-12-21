@@ -17,7 +17,7 @@ from aiogram.types import (
 
 reply_router = Router()
 
-
+session = SessionLocal()
 
 
 # FSM States

@@ -106,8 +106,6 @@ async def menu_handler(message: types.Message):
 
 
 
-from database.db import SessionLocal
-from sqlalchemy.ext.asyncio import AsyncSession
 
 @reply_router.message(F.text == "Маълумотҳои шахсии ман")
 async def show_user_data(message: types.Message, state: FSMContext):
@@ -155,26 +153,36 @@ async def choose_manual_address(message: types.Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram import types
+from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+
+# Handler for manual address input
 @reply_router.message(UserDataStates.input_address_manual)
-async def input_manual_address_handler(message: types.Message, state: FSMContext, session: AsyncSession):
-    await save_address_and_finish(
-        message=message, 
-        state=state, 
-        session=session, 
-        address=message.text
-    )
-# Handler for location-based address input
-@reply_router.message(UserDataStates.choose_address_method)
-async def input_location_address_handler(message: Message, state: FSMContext, session: AsyncSession):
-    if message.location:  # Check if the message contains a location
-        location = message.location
-        address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
+async def input_manual_address_handler(message: types.Message, state: FSMContext):
+    async with SessionLocal() as session:
         await save_address_and_finish(
             message=message, 
             state=state, 
             session=session, 
-            address=address
+            address=message.text
         )
+
+# Handler for location-based address input
+@reply_router.message(UserDataStates.choose_address_method)
+async def input_location_address_handler(message: Message, state: FSMContext):
+    if message.location:  # Check if the message contains a location
+        location = message.location
+        address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
+        
+        async with SessionLocal() as session:
+            await save_address_and_finish(
+                message=message, 
+                state=state, 
+                session=session, 
+                address=address
+            )
     else:
         await message.answer("Please send your location.")
 

@@ -158,6 +158,7 @@ async def choose_manual_address(message: types.Message, state: FSMContext):
 # Handler for manual address input
 @reply_router.message(UserDataStates.input_address_manual)
 async def input_manual_address_handler(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
     async with SessionLocal() as session:
         await save_address_and_finish(
             message=message, 
@@ -165,10 +166,28 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
             session=session, 
             address=message.text
         )
+        
+
+    
+        # Ҷустуҷӯи маълумотҳои корбар
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_data = result.scalars().first()
+
+        if user_data:
+            text = (
+                f"Ном: {user_data.customer_name}\n"
+                f"Рақами телефон: {user_data.phone_number}\n"
+                f"Суроға: {user_data.address or 'Номаълум'}"
+            )
+            await message.answer(text, reply_markup=edit_delete_keyboard)
+        else:
+            
+            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
 
 # Handler for location-based address input
 @reply_router.message(UserDataStates.choose_address_method)
 async def input_location_address_handler(message: Message, state: FSMContext):
+    user_id = message.from_user.id
     if message.location:  # Check if the message contains a location
         location = message.location
         address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
@@ -180,8 +199,40 @@ async def input_location_address_handler(message: Message, state: FSMContext):
                 session=session, 
                 address=address
             )
+    
+    
+        # Ҷустуҷӯи маълумотҳои корбар
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_data = result.scalars().first()
+
+        if user_data:
+            text = (
+                f"Ном: {user_data.customer_name}\n"
+                f"Рақами телефон: {user_data.phone_number}\n"
+                f"Суроға: {user_data.address or 'Номаълум'}"
+            )
+            await message.answer(text, reply_markup=edit_delete_keyboard)
+        else:
+            
+            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
     else:
         await message.answer("Please send your location.")
+        
+        # Ҷустуҷӯи маълумотҳои корбар
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_data = result.scalars().first()
+
+        if user_data:
+            text = (
+                f"Ном: {user_data.customer_name}\n"
+                f"Рақами телефон: {user_data.phone_number}\n"
+                f"Суроға: {user_data.address or 'Номаълум'}"
+            )
+            await message.answer(text, reply_markup=edit_delete_keyboard)
+        else:
+            
+            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
+
 
 
 @reply_router.message(F.text == "Иваз кардан")

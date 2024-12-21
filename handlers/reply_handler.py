@@ -6,6 +6,8 @@ from database.db import SessionLocal
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import LocationFilter
+from aiogram.types import ContentType
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy.future import select
 from aiogram.types import (
@@ -158,7 +160,7 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
         address=message.text
     )
 
-@reply_router.message(UserDataStates.choose_address_method, content_types=types.ContentType.LOCATION)
+@reply_router.message(UserDataStates.choose_address_method, LocationFilter())
 async def input_location_address_handler(message: types.Message, state: FSMContext, session: AsyncSession):
     location = message.location
     address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"

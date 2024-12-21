@@ -201,23 +201,10 @@ async def input_location_address_handler(message: Message, state: FSMContext):
             )
     
     
-        # Ҷустуҷӯи маълумотҳои корбар
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_data = result.scalars().first()
-
-        if user_data:
-            text = (
-                f"Ном: {user_data.customer_name}\n"
-                f"Рақами телефон: {user_data.phone_number}\n"
-                f"Суроға: {user_data.address or 'Номаълум'}"
-            )
-            await message.answer(text, reply_markup=edit_delete_keyboard)
-        else:
-            
-            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
     else:
         await message.answer("Please send your location.")
-        
+
+    async with SessionLocal() as session:
         # Ҷустуҷӯи маълумотҳои корбар
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_data = result.scalars().first()

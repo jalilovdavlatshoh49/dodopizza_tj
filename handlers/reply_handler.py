@@ -337,7 +337,6 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
 
 
 
-
 @reply_router.message(F.text == "Нест кардан")
 async def delete_user_data(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
@@ -351,7 +350,6 @@ async def delete_user_data(message: types.Message, state: FSMContext):
             # Delete the user's order from the database
             async with session.begin():
                 await session.delete(user_order)
-                await session.commit()
 
             # Clear the state and send confirmation message
             await state.clear()

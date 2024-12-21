@@ -106,25 +106,30 @@ async def menu_handler(message: types.Message):
 
 
 
+from database.db import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+
 @reply_router.message(F.text == "Маълумотҳои шахсии ман")
-async def show_user_data(message: types.Message, state: FSMContext, session: AsyncSession):
+async def show_user_data(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
-    # Ҷустуҷӯи маълумотҳои корбар
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_data = result.scalars().first()
+    # Create a session manually
+    async with SessionLocal() as session:
+        # Ҷустуҷӯи маълумотҳои корбар
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_data = result.scalars().first()
 
-    if user_data:
-        text = (
-            f"Ном: {user_data.customer_name}\n"
-            f"Рақами телефон: {user_data.phone_number}\n"
-            f"Суроға: {user_data.address or 'Номаълум'}"
-        )
-        await message.answer(text, reply_markup=edit_delete_keyboard)
-    else:
-        # Агар маълумот набошад, аз корбар хоҳиш кардани маълумот
-        await state.set_state(UserDataStates.input_name)
-        await message.answer("Лутфан номи худро ворид кунед:")
+        if user_data:
+            text = (
+                f"Ном: {user_data.customer_name}\n"
+                f"Рақами телефон: {user_data.phone_number}\n"
+                f"Суроға: {user_data.address or 'Номаълум'}"
+            )
+            await message.answer(text, reply_markup=edit_delete_keyboard)
+        else:
+            # Агар маълумот набошад, аз корбар хоҳиш кардани маълумот
+            await state.set_state(UserDataStates.input_name)
+            await message.answer("Лутфан номи худро ворид кунед:")
 
 
 @reply_router.message(UserDataStates.input_name)

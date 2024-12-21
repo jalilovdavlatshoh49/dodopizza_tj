@@ -168,7 +168,7 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
         )
         
 
-    
+    async with SessionLocal() as session:
         # Ҷустуҷӯи маълумотҳои корбар
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_data = result.scalars().first()

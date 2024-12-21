@@ -27,7 +27,7 @@ class UserDataStates(StatesGroup):
     choose_address_method = State()
     input_address_manual = State()
     input_address_location = State()
-
+    edit_data = State()
 
 async def save_address_and_finish(message: types.Message, state: FSMContext, session: AsyncSession, address: str):
     user_id = message.from_user.id

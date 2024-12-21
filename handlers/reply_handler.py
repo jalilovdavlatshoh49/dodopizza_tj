@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_cart_items, get_order_history, get_user_info
 from aiogram.types import InputMediaPhoto
 from database.db import SessionLocal
-from aiogram.filters import Command
+from aiogram.filters import Command, Location
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -262,25 +262,22 @@ async def edit_address_manual(message: types.Message, state: FSMContext, session
     else:
         await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
-@reply_router.message(UserDataStates.choose_address_method, content_types=types.ContentType.LOCATION)
-async def edit_address_location(message: types.Message, state: FSMContext, session: AsyncSession):
+
+
+@reply_router.message(UserDataStates.choose_address_method)
+@reply_router.message(Location())  # Filter for location messages
+async def edit_address_location(message: Message, state: FSMContext, session: AsyncSession):
     location = message.location
     new_address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
     user_id = message.from_user.id
-
-    # Маълумотро дар база навсозӣ кардан
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
-
-    if user_order:
-        user_order.address = new_address
-        async with session.begin():
-            await session.commit()
-
-        await state.clear()
-        await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-    else:
-        await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+    
+    # You can now process the location and save it or perform other actions
+    await save_address_and_finish(
+        message=message,
+        state=state,
+        session=session,
+        address=new_address
+    )
 
 
 

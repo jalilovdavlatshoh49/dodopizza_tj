@@ -120,7 +120,7 @@ async def show_user_data(message: types.Message, state: FSMContext, session: Asy
             f"Суроға: {user_data.address or 'Номаълум'}"
         )
         await message.answer(text, reply_markup=edit_delete_keyboard)
-     else:
+    else:
         # Агар маълумот набошад, аз корбар хоҳиш кардани маълумот
         await state.set_state(UserDataStates.input_name)
         await message.answer("Лутфан номи худро ворид кунед:")

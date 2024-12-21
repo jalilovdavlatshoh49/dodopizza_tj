@@ -153,10 +153,7 @@ async def choose_manual_address(message: types.Message, state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram import types
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
+
 
 # Handler for manual address input
 @reply_router.message(UserDataStates.input_address_manual)
@@ -200,48 +197,62 @@ async def edit_name_start(message: types.Message, state: FSMContext):
     await state.set_state(UserDataStates.input_name)
     await message.answer("Лутфан номи нави худро ворид кунед:")
 
+
+
 @reply_router.message(UserDataStates.input_name)
-async def edit_name(message: types.Message, state: FSMContext, session: AsyncSession):
+async def edit_name(message: types.Message, state: FSMContext):
     new_name = message.text
     user_id = message.from_user.id
 
-    # Маълумотро дар база навсозӣ кардан
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
+    async with SessionLocal() as session:
+        # Fetch the user's order from the database
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
 
-    if user_order:
-        user_order.customer_name = new_name
-        async with session.begin():
-            await session.commit()
+        if user_order:
+            # Update the user's name
+            user_order.customer_name = new_name
 
-        await state.clear()
-        await message.answer("Ном бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-    else:
-        await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            # Commit the changes to the database
+            async with session.begin():
+                await session.commit()
+
+            # Clear the state and send confirmation message
+            await state.clear()
+            await message.answer("Ном бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+        else:
+            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 @reply_router.message(UserDataStates.edit_data, F.text == "Иваз кардани рақами телефон")
 async def edit_phone_start(message: types.Message, state: FSMContext):
     await state.set_state(UserDataStates.input_phone)
     await message.answer("Лутфан рақами телефони нави худро ворид кунед:")
 
+
+
 @reply_router.message(UserDataStates.input_phone)
-async def edit_phone(message: types.Message, state: FSMContext, session: AsyncSession):
+async def edit_phone(message: types.Message, state: FSMContext):
     new_phone = message.text
     user_id = message.from_user.id
 
-    # Маълумотро дар база навсозӣ кардан
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
+    async with SessionLocal() as session:
+        # Fetch the user's order from the database
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
 
-    if user_order:
-        user_order.phone_number = new_phone
-        async with session.begin():
-            await session.commit()
+        if user_order:
+            # Update the user's phone number
+            user_order.phone_number = new_phone
 
-        await state.clear()
-        await message.answer("Рақами телефон бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-    else:
-        await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            # Commit the changes to the database
+            async with session.begin():
+                await session.commit()
+
+            # Clear the state and send confirmation message
+            await state.clear()
+            await message.answer("Рақами телефон бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+        else:
+            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 @reply_router.message(UserDataStates.edit_data, F.text == "Иваз кардани суроға")
 async def edit_address_start(message: types.Message, state: FSMContext):
@@ -256,46 +267,56 @@ async def edit_address_manual_start(message: types.Message, state: FSMContext):
     await state.set_state(UserDataStates.input_address_manual)
     await message.answer("Лутфан суроғаи нави худро ворид кунед:")
 
+
+
 @reply_router.message(UserDataStates.input_address_manual)
-async def edit_address_manual(message: types.Message, state: FSMContext, session: AsyncSession):
+async def edit_address_manual(message: types.Message, state: FSMContext):
     new_address = message.text
     user_id = message.from_user.id
 
-    # Маълумотро дар база навсозӣ кардан
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
+    async with SessionLocal() as session:
+        # Fetch the user's order from the database
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
 
-    if user_order:
-        user_order.address = new_address
-        async with session.begin():
-            await session.commit()
+        if user_order:
+            # Update the user's address
+            user_order.address = new_address
 
-        await state.clear()
-        await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-    else:
-        await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            # Commit the changes to the database
+            async with session.begin():
+                await session.commit()
+
+            # Clear the state and send confirmation message
+            await state.clear()
+            await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+        else:
+            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 
 
 
 
 @reply_router.message(F.text == "Нест кардан")
-async def delete_user_data(message: types.Message, state: FSMContext, session: AsyncSession):
+async def delete_user_data(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
-    # Маълумотро нест кардан
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
+    async with SessionLocal() as session:
+        # Fetch the user's order from the database
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
 
-    if user_order:
-        async with session.begin():
-            await session.delete(user_order)
-            await session.commit()
+        if user_order:
+            # Delete the user's order from the database
+            async with session.begin():
+                await session.delete(user_order)
+                await session.commit()
 
-        await state.clear()
-        await message.answer("Маълумот бо муваффақият нест карда шуд.", reply_markup=main_keyboard)
-    else:
-        await message.answer("Маълумот пайдо нашуд.")
+            # Clear the state and send confirmation message
+            await state.clear()
+            await message.answer("Маълумот бо муваффақият нест карда шуд.", reply_markup=main_keyboard)
+        else:
+            await message.answer("Маълумот пайдо нашуд.")
 
 @reply_router.message(F.text == "Бозгашт")
 async def go_back(message: types.Message, state: FSMContext):

@@ -338,7 +338,9 @@ async def edit_address_map_start(message: types.Message, state: FSMContext):
     await message.answer("Лутфан суроғаи худро тавассути харита фиристед:")
 
 
-@reply_router.message(EditUserDataStates.input_address_map, content_types=types.ContentType.LOCATION)
+
+
+@reply_router.message(EditUserDataStates.input_address_map, F.content_type == types.ContentType.LOCATION)
 async def edit_address_map(message: types.Message, state: FSMContext):
     user_location = message.location
     user_id = message.from_user.id
@@ -353,7 +355,10 @@ async def edit_address_map(message: types.Message, state: FSMContext):
             async with session.begin():
                 await session.commit()
             await state.clear()
-            await message.answer("Суроға бо муваффақият бо истифода аз харита иваз шуд.", reply_markup=main_keyboard)
+            await message.answer(
+                "Суроға бо муваффақият бо истифода аз харита иваз шуд.",
+                reply_markup=main_keyboard
+            )
         else:
             await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 

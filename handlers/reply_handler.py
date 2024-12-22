@@ -341,21 +341,26 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
 async def delete_user_data(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
-    async with SessionLocal() as session:
-        # Fetch the user's order from the database
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_order = result.scalars().first()
+    try:
+        async with SessionLocal() as session:
+            # Fetch the user's order from the database
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_order = result.scalars().first()
 
-        if user_order:
-            # Delete the user's order from the database
-            async with session.begin():
+            if user_order:
+                # Delete the user's order from the database
                 await session.delete(user_order)
+                await session.commit()  # Commit the transaction
 
-            # Clear the state and send confirmation message
-            await state.clear()
-            await message.answer("Маълумот бо муваффақият нест карда шуд.", reply_markup=main_keyboard)
-        else:
-            await message.answer("Маълумот пайдо нашуд.")
+                # Clear the state and send confirmation message
+                await state.clear()
+                await message.answer("Маълумот бо муваффақият нест карда шуд.", reply_markup=main_keyboard)
+            else:
+                await message.answer("Маълумот пайдо нашуд.")
+    except Exception as e:
+        # Log the error and notify the user
+        print(f"Error deleting user data: {e}")
+        await message.answer("Хатогӣ рух дод. Лутфан дубора кӯшиш кунед.")
 
 @reply_router.message(F.text == "Бозгашт")
 async def go_back(message: types.Message, state: FSMContext):

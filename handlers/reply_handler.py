@@ -260,18 +260,17 @@ async def edit_name(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_order = result.scalars().first()
+        async with session.begin():  # Транзаксия оғоз мешавад
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_order = result.scalars().first()
 
-        if user_order:
-            user_order.customer_name = new_name
-            async with session.begin():
-                await session.commit()
-            await state.clear()
-            await message.answer("Ном бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-        else:
-            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
-
+            if user_order:
+                user_order.customer_name = new_name
+                # Бе зарурат session.commit() набояд такрор шавад
+                await state.clear()
+                await message.answer("Ном бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+            else:
+                await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 @reply_router.message(EditUserDataStates.edit_data, F.text == "Иваз кардани рақами телефон")
 async def edit_phone_start(message: types.Message, state: FSMContext):

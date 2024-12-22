@@ -285,17 +285,17 @@ async def edit_phone(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_order = result.scalars().first()
+        async with session.begin():  # Транзаксия дар ин ҷо оғоз мешавад
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_order = result.scalars().first()
 
-        if user_order:
-            user_order.phone_number = new_phone
-            async with session.begin():
-                await session.commit()
-            await state.clear()
-            await message.answer("Рақами телефон бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-        else:
-            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            if user_order:
+                user_order.phone_number = new_phone
+                await session.commit()  # Тағйиротро сабт мекунем
+                await state.clear()
+                await message.answer("Рақами телефон бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+            else:
+                await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 
 @reply_router.message(EditUserDataStates.edit_data, F.text == "Иваз кардани суроға")
@@ -319,17 +319,17 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_order = result.scalars().first()
+        async with session.begin():  # Транзаксия оғоз мешавад
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_order = result.scalars().first()
 
-        if user_order:
-            user_order.address = new_address
-            async with session.begin():
-                await session.commit()
-            await state.clear()
-            await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
-        else:
-            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            if user_order:
+                user_order.address = new_address
+                await session.commit()  # Тағйиротро сабт мекунем
+                await state.clear()
+                await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+            else:
+                await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 
 @reply_router.message(EditUserDataStates.choose_address_method, F.text == "Иваз кардани суроға (бо харита)")
@@ -346,21 +346,22 @@ async def edit_address_map(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        result = await session.execute(select(Order).filter(Order.user_id == user_id))
-        user_order = result.scalars().first()
+        async with session.begin():  # Транзаксия оғоз мешавад
+            result = await session.execute(select(Order).filter(Order.user_id == user_id))
+            user_order = result.scalars().first()
 
-        if user_order:
-            user_order.latitude = user_location.latitude
-            user_order.longitude = user_location.longitude
-            async with session.begin():
-                await session.commit()
-            await state.clear()
-            await message.answer(
-                "Суроға бо муваффақият бо истифода аз харита иваз шуд.",
-                reply_markup=main_keyboard
-            )
-        else:
-            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+            if user_order:
+                # Навсозии маълумоти ҷойгиршавӣ
+                user_order.latitude = user_location.latitude
+                user_order.longitude = user_location.longitude
+                await session.commit()  # Тағйиротро сабт мекунем
+                await state.clear()
+                await message.answer(
+                    "Суроға бо муваффақият бо истифода аз харита иваз шуд.",
+                    reply_markup=main_keyboard
+                )
+            else:
+                await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 
 

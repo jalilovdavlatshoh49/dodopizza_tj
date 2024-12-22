@@ -30,6 +30,14 @@ class UserDataStates(StatesGroup):
     input_address_location = State()
     edit_data = State()
 
+class EditUserDataStates:
+    edit_data = "edit_data"
+    input_name = "input_name"
+    input_phone = "input_phone"
+    choose_address_method = "choose_address_method"
+    input_address_manual = "input_address_manual"
+    input_address_map = "input_address_map"
+
 async def save_address_and_finish(message: types.Message, state: FSMContext, session: AsyncSession, address: str):
     user_id = message.from_user.id
     user_data = await state.get_data()
@@ -226,112 +234,124 @@ async def input_location_address_handler(message: Message, state: FSMContext):
         # Ҳолати FSM-и корбарро тоза намекунем, то ӯ боз кӯшиш кунад
 
 
+
+
+
 @reply_router.message(F.text == "Иваз кардан")
 async def start_edit_user_data(message: types.Message, state: FSMContext):
-    await state.set_state(UserDataStates.edit_data)
+    await state.set_state(EditUserDataStates.edit_data)
     await message.answer(
-        "Лутфан интихоб кунед, кадом маълумотро иваз кардан мехоҳед:", 
-        reply_markup=edit_options_keyboard
+        "Лутфан интихоб кунед, кадом маълумотро иваз кардан мехоҳед:",
+        reply_markup=edit_options_keyboard,
     )
 
-@reply_router.message(UserDataStates.edit_data, F.text == "Иваз кардани ном")
+
+@reply_router.message(EditUserDataStates.edit_data, F.text == "Иваз кардани ном")
 async def edit_name_start(message: types.Message, state: FSMContext):
-    await state.set_state(UserDataStates.input_name)
+    await state.set_state(EditUserDataStates.input_name)
     await message.answer("Лутфан номи нави худро ворид кунед:")
 
 
-
-@reply_router.message(UserDataStates.input_name)
+@reply_router.message(EditUserDataStates.input_name)
 async def edit_name(message: types.Message, state: FSMContext):
     new_name = message.text
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        # Fetch the user's order from the database
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_order = result.scalars().first()
 
         if user_order:
-            # Update the user's name
             user_order.customer_name = new_name
-
-            # Commit the changes to the database
             async with session.begin():
                 await session.commit()
-
-            # Clear the state and send confirmation message
             await state.clear()
             await message.answer("Ном бо муваффақият иваз шуд.", reply_markup=main_keyboard)
         else:
             await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
-@reply_router.message(UserDataStates.edit_data, F.text == "Иваз кардани рақами телефон")
+
+@reply_router.message(EditUserDataStates.edit_data, F.text == "Иваз кардани рақами телефон")
 async def edit_phone_start(message: types.Message, state: FSMContext):
-    await state.set_state(UserDataStates.input_phone)
+    await state.set_state(EditUserDataStates.input_phone)
     await message.answer("Лутфан рақами телефони нави худро ворид кунед:")
 
 
-
-@reply_router.message(UserDataStates.input_phone)
+@reply_router.message(EditUserDataStates.input_phone)
 async def edit_phone(message: types.Message, state: FSMContext):
     new_phone = message.text
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        # Fetch the user's order from the database
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_order = result.scalars().first()
 
         if user_order:
-            # Update the user's phone number
             user_order.phone_number = new_phone
-
-            # Commit the changes to the database
             async with session.begin():
                 await session.commit()
-
-            # Clear the state and send confirmation message
             await state.clear()
             await message.answer("Рақами телефон бо муваффақият иваз шуд.", reply_markup=main_keyboard)
         else:
             await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
-@reply_router.message(UserDataStates.edit_data, F.text == "Иваз кардани суроға")
+
+@reply_router.message(EditUserDataStates.edit_data, F.text == "Иваз кардани суроға")
 async def edit_address_start(message: types.Message, state: FSMContext):
-    await state.set_state(UserDataStates.choose_address_method)
+    await state.set_state(EditUserDataStates.choose_address_method)
     await message.answer(
-        "Лутфан тарзи иваз кардани суроғаи худро интихоб кунед:", 
-        reply_markup=address_edit_method_keyboard
+        "Лутфан тарзи иваз кардани суроғаи худро интихоб кунед:",
+        reply_markup=address_edit_method_keyboard,
     )
 
-@reply_router.message(UserDataStates.choose_address_method, F.text == "Иваз кардани суроға (дастӣ)")
+
+@reply_router.message(EditUserDataStates.choose_address_method, F.text == "Иваз кардани суроға (дастӣ)")
 async def edit_address_manual_start(message: types.Message, state: FSMContext):
-    await state.set_state(UserDataStates.input_address_manual)
+    await state.set_state(EditUserDataStates.input_address_manual)
     await message.answer("Лутфан суроғаи нави худро ворид кунед:")
 
 
-
-@reply_router.message(UserDataStates.input_address_manual)
+@reply_router.message(EditUserDataStates.input_address_manual)
 async def edit_address_manual(message: types.Message, state: FSMContext):
     new_address = message.text
     user_id = message.from_user.id
 
     async with SessionLocal() as session:
-        # Fetch the user's order from the database
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_order = result.scalars().first()
 
         if user_order:
-            # Update the user's address
             user_order.address = new_address
-
-            # Commit the changes to the database
             async with session.begin():
                 await session.commit()
-
-            # Clear the state and send confirmation message
             await state.clear()
             await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
+        else:
+            await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+
+
+@reply_router.message(EditUserDataStates.choose_address_method, F.text == "Иваз кардани суроға (бо харита)")
+async def edit_address_map_start(message: types.Message, state: FSMContext):
+    await state.set_state(EditUserDataStates.input_address_map)
+    await message.answer("Лутфан суроғаи худро тавассути харита фиристед:")
+
+
+@reply_router.message(EditUserDataStates.input_address_map, content_types=types.ContentType.LOCATION)
+async def edit_address_map(message: types.Message, state: FSMContext):
+    user_location = message.location
+    user_id = message.from_user.id
+
+    async with SessionLocal() as session:
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
+
+        if user_order:
+            user_order.latitude = user_location.latitude
+            user_order.longitude = user_location.longitude
+            async with session.begin():
+                await session.commit()
+            await state.clear()
+            await message.answer("Суроға бо муваффақият бо истифода аз харита иваз шуд.", reply_markup=main_keyboard)
         else:
             await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 

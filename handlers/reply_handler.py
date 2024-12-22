@@ -339,28 +339,43 @@ async def edit_address_map_start(message: types.Message, state: FSMContext):
 
 
 
+# Handler for location-based address input
 @reply_router.message(EditUserDataStates.input_address_map, F.content_type == types.ContentType.LOCATION)
-async def edit_address_map(message: types.Message, state: FSMContext):
-    user_location = message.location
+async def input_location_address_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
+    location = message.location
 
+    # Ташкили суроға аз координатаҳо
+    address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
+
+    # Сабт кардани суроға
     async with SessionLocal() as session:
-        async with session.begin():  # Транзаксия оғоз мешавад
-            result = await session.execute(select(Order).filter(Order.user_id == user_id))
-            user_order = result.scalars().first()
+        result = await session.execute(select(Order).filter(Order.user_id == user_id))
+        user_order = result.scalars().first()
 
-            if user_order:
-                # Навсозии маълумоти ҷойгиршавӣ
-                user_order.latitude = user_location.latitude
-                user_order.longitude = user_location.longitude
-                await session.commit()  # Тағйиротро сабт мекунем
-                await state.clear()
-                await message.answer(
-                    "Суроға бо муваффақият бо истифода аз харита иваз шуд.",
-                    reply_markup=main_keyboard
-                )
-            else:
-                await message.answer("Хатогӣ: маълумот пайдо нашуд.")
+        if user_order:
+            # Навсозии маълумот
+            user_order.latitude = location.latitude
+            user_order.longitude = location.longitude
+            user_order.address = address
+
+            async with session.begin():  # Тағйиротро сабт мекунем
+                await session.commit()
+
+            # Ҷавоб ба корбар
+            await message.answer(
+                f"Суроға бо муваффақият нав карда шуд:\n{address}",
+                reply_markup=main_keyboard,
+            )
+            await state.clear()
+        else:
+            # Агар маълумот дар база пайдо нашавад
+            await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
+
+# Агар паём ҷойгиршавӣ надошта бошад
+@reply_router.message(EditUserDataStates.input_address_map)
+async def input_location_address_retry(message: types.Message):
+    await message.answer("Лутфан ҷойгиршавии худро тавассути харита фиристед.")
 
 
 

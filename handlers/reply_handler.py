@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_cart_items, get_order_history, get_user_info
 from aiogram.types import InputMediaPhoto
 from database.db import SessionLocal, Order
+from menu_handler import get_custom_menu_keyboard
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -365,8 +366,7 @@ async def delete_user_data(message: types.Message, state: FSMContext):
 @reply_router.message(F.text == "Бозгашт")
 async def go_back(message: types.Message, state: FSMContext):
     await state.clear()
-    keyboard = await get_category_keyboard()
-    await message.answer("Бозгашт ба менюи асосӣ.", reply_markup=keyboard)
+    await message.answer("Бозгашт ба менюи асосӣ.", reply_markup=get_custom_menu_keyboard())
 
 
 

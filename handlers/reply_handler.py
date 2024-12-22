@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_cart_items, get_order_history, get_user_info
 from aiogram.types import InputMediaPhoto
 from database.db import SessionLocal, Order
-from menu_handler import get_custom_menu_keyboard
+from handlers.menu_handler import get_custom_menu_keyboard
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup

@@ -40,6 +40,7 @@ class EditUserDataStates(StatesGroup):
     input_address_manual = State()
     input_address_map = State()
 
+
 async def save_address_and_finish(message: types.Message, state: FSMContext, session: AsyncSession, address: str):
     user_id = message.from_user.id
     user_data = await state.get_data()
@@ -331,15 +332,13 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
                 await message.answer("Хатогӣ: маълумот пайдо нашуд.")
 
 
+
+
+
 @reply_router.message(EditUserDataStates.choose_address_method, F.text == "Иваз кардани суроға (бо харита)")
 async def edit_address_map_start(message: types.Message, state: FSMContext):
     await state.set_state(EditUserDataStates.input_address_map)
     await message.answer("Лутфан суроғаи худро тавассути харита фиристед:")
-
-
-
-
-
 
 @reply_router.message(EditUserDataStates.input_address_map)
 async def edit_location_address_handler(message: types.Message, state: FSMContext):

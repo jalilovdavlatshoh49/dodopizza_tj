@@ -30,13 +30,15 @@ class UserDataStates(StatesGroup):
     input_address_location = State()
     edit_data = State()
 
-class EditUserDataStates:
-    edit_data = "edit_data"
-    input_name = "input_name"
-    input_phone = "input_phone"
-    choose_address_method = "choose_address_method"
-    input_address_manual = "input_address_manual"
-    input_address_map = "input_address_map"
+
+
+class EditUserDataStates(StatesGroup):
+    edit_data = State()
+    input_name = State()
+    input_phone = State()
+    choose_address_method = State()
+    input_address_manual = State()
+    input_address_map = State()
 
 async def save_address_and_finish(message: types.Message, state: FSMContext, session: AsyncSession, address: str):
     user_id = message.from_user.id

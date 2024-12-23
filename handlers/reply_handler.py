@@ -369,6 +369,12 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
 
             if user_order:
                 user_order.address = new_address
+
+                # Агар latitude ва longitude мавҷуд бошанд, нест кунем
+                if hasattr(user_order, 'latitude') and hasattr(user_order, 'longitude'):
+                    user_order.latitude = None
+                    user_order.longitude = None
+
                 await session.commit()  # Тағйиротро сабт мекунем
                 await state.clear()
                 await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)

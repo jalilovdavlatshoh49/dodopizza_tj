@@ -335,7 +335,7 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
 
 
 
-@reply_router.message(EditUserDataStates.choose_address_method, F.text == "Иваз кардани суроға (бо харита)")
+@reply_router.message(EditUserDataStates.choose_address_method)
 async def edit_address_map_start(message: types.Message, state: FSMContext):
     await state.set_state(EditUserDataStates.input_address_map)
     await message.answer("Лутфан суроғаи худро тавассути харита фиристед:")
@@ -344,34 +344,27 @@ async def edit_address_map_start(message: types.Message, state: FSMContext):
 async def edit_location_address_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
-    # Санҷиши оё корбар ҷойгиршавӣ фиристодааст
     if message.location:
         location = message.location
         address = f"Latitude: {location.latitude}, Longitude: {location.longitude}"
 
-        # Сабт кардани маълумот
         async with SessionLocal() as session:
             async with session.begin():
+                # Сабти суроға
                 result = await session.execute(select(Order).filter(Order.user_id == user_id))
                 user_order = result.scalars().first()
 
                 if user_order:
-                    # Навсозии маълумот
                     user_order.latitude = location.latitude
                     user_order.longitude = location.longitude
                     user_order.address = address
                     await session.commit()
 
-                    # Ҷавоб ба корбар
-                    await message.answer(
-                        f"Суроға бо муваффақият нав карда шуд:\n{address}",
-                        reply_markup=main_keyboard,
-                    )
+                    await message.answer("Суроға бо муваффақият иваз шуд.", reply_markup=main_keyboard)
                     await state.clear()
                 else:
                     await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
     else:
-        # Агар ҷойгиршавӣ фиристода нашавад
         await message.answer("Лутфан ҷойгиршавии худро тавассути харита фиристед.")
 
 

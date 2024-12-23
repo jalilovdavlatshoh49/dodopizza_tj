@@ -118,21 +118,34 @@ async def menu_handler(message: types.Message):
 async def show_user_data(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
-    # Create a session manually
+    # Сессияи дастӣ
     async with SessionLocal() as session:
-        # Ҷустуҷӯи маълумотҳои корбар
         result = await session.execute(select(Order).filter(Order.user_id == user_id))
         user_data = result.scalars().first()
 
         if user_data:
+            # Агар ҷойгиршавӣ тавассути харита бошад
+            if user_data.latitude and user_data.longitude:
+                address_text = (
+                    f"Суроғаи бо харита:\n"
+                    f"Latitude: {user_data.latitude}\n"
+                    f"Longitude: {user_data.longitude}"
+                )
+            else:
+                # Агар ҷойгиршавӣ бо дасти ворид шуда бошад
+                address_text = f"Суроғаи бо дасти воридшуда: {user_data.address or 'Номаълум'}"
+
             text = (
                 f"Ном: {user_data.customer_name}\n"
                 f"Рақами телефон: {user_data.phone_number}\n"
-                f"Суроға: {user_data.address or 'Номаълум'}"
+                f"{address_text}"
             )
+
+            # Фиристодани маълумот ба корбар
             await message.answer(text, reply_markup=edit_delete_keyboard)
+
         else:
-            # Агар маълумот набошад, аз корбар хоҳиш кардани маълумот
+            # Агар маълумот вуҷуд надошта бошад
             await state.set_state(UserDataStates.input_name)
             await message.answer("Лутфан номи худро ворид кунед:")
 

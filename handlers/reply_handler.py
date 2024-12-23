@@ -212,21 +212,26 @@ address_edit_method_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-async def update_user_location(session, user_id, latitude, longitude, address):
-    """
-    Навсозии Latitude, Longitude ва Address дар ҷадвали Order барои корбар
-    """
-    result = await session.execute(select(Order).filter(Order.user_id == user_id))
-    user_order = result.scalars().first()
+async def save_location_data(message: types.Message, state: FSMContext, session: AsyncSession, user_id, latitude, longitude):
+    user_id = message.from_user.id
+    user_data = await state.get_data()
+        # Агар Order мавҷуд набошад, Order-и нав месозем
+    order = Order(
+        user_id=user_id,
+        latitude=latitude,
+        longitude=longitude,
+        address=f"Latitude: {latitude}, Longitude: {longitude}",
+        customer_name=user_data.get("customer_name"),
+        phone_number=user_data.get("phone_number"),
+        )
+    session.add(order)
 
-    if user_order:
-        user_order.latitude = latitude
-        user_order.longitude = longitude
-        user_order.address = address
-        await session.commit()
-        return True
-    return False
-
+    # Сабти тағйирот 
+    await session.commit()
+    
+    # Ҳолати истифодабарандаро тоза мекунем
+    await state.clear()
+    await message.answer("Маълумот бо муваффақият сабт шуд.", reply_markup=main_keyboard)
 
 # Handler for location-based address input
 @reply_router.message(UserDataStates.choose_address_method)
@@ -240,7 +245,7 @@ async def input_location_address_handler(message: Message, state: FSMContext):
 
         # Сабт кардани маълумот
         async with SessionLocal() as session:
-            success = await update_user_location(
+            success = await save_location_data(
                 session=session,
                 user_id=user_id,
                 latitude=location.latitude,

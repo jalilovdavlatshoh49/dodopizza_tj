@@ -250,7 +250,6 @@ async def input_location_address_handler(message: Message, state: FSMContext):
                 user_id=user_id,
                 latitude=location.latitude,
                 longitude=location.longitude,
-                address=address,
             )
 
             if success:

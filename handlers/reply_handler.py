@@ -217,6 +217,7 @@ async def save_location_data(message: types.Message, state: FSMContext, session:
     user_data = await state.get_data()
         # Агар Order мавҷуд набошад, Order-и нав месозем
     order = Order(
+        cart=None, 
         user_id=user_id,
         latitude=latitude,
         longitude=longitude,

@@ -126,22 +126,23 @@ async def show_user_data(message: types.Message, state: FSMContext):
         if user_data:
             # Агар ҷойгиршавӣ тавассути харита бошад
             if user_data.latitude and user_data.longitude:
-                address_text = (
-                    f"Суроғаи бо харита:\n"
-                    f"Latitude: {user_data.latitude}\n"
-                    f"Longitude: {user_data.longitude}"
+                # Фиристодани харитаи ҷойгиршавӣ
+                await message.answer("Суроғаи шумо:")
+                await message.bot.send_location(
+                    chat_id=message.chat.id,
+                    latitude=user_data.latitude,
+                    longitude=user_data.longitude,
                 )
             else:
                 # Агар ҷойгиршавӣ бо дасти ворид шуда бошад
                 address_text = f"Суроғаи бо дасти воридшуда: {user_data.address or 'Номаълум'}"
+                await message.answer(address_text)
 
+            # Фиристодани маълумоти шахсӣ
             text = (
                 f"Ном: {user_data.customer_name}\n"
                 f"Рақами телефон: {user_data.phone_number}\n"
-                f"{address_text}"
             )
-
-            # Фиристодани маълумот ба корбар
             await message.answer(text, reply_markup=edit_delete_keyboard)
 
         else:

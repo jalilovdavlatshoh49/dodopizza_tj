@@ -223,7 +223,7 @@ async def save_location_data(message: types.Message, state: FSMContext, session:
         longitude=longitude,
         address=f"Latitude: {latitude}, Longitude: {longitude}",
         customer_name=user_data.get("customer_name"),
-        phone_number=user_data.get("phone_number"),
+        phone_number=user_data.get("phone_number")
         )
     session.add(order)
 
@@ -252,7 +252,7 @@ async def input_location_address_handler(message: Message, state: FSMContext):
                 session=session,
                 user_id=user_id,
                 latitude=location.latitude,
-                longitude=location.longitude,
+                longitude=location.longitude
             )
 
             if success:

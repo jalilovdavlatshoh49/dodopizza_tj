@@ -260,11 +260,17 @@ async def input_location_address_handler(message: Message, state: FSMContext):
             user_data = result.scalars().first()
 
             if user_data:
+                await message.answer("Суроғаи шумо:")
+                await message.bot.send_location(
+                    chat_id=message.chat.id,
+                    latitude=user_data.latitude,
+                    longitude=user_data.longitude,
+                )
+                # Фиристодани маълумоти шахсӣ
                 text = (
-                        f"Ном: {user_data.customer_name}\n"
-                        f"Рақами телефон: {user_data.phone_number}\n"
-                        f"Суроға: {user_data.address or 'Номаълум'}"
-                    )
+                f"Ном: {user_data.customer_name}\n"
+                f"Рақами телефон: {user_data.phone_number}\n"
+            )
                 await message.answer(text, reply_markup=edit_delete_keyboard)
             else:
                 await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")

@@ -246,6 +246,8 @@ async def input_location_address_handler(message: Message, state: FSMContext):
         # Сабт кардани маълумот
         async with SessionLocal() as session:
             success = await save_location_data(
+                message=message, 
+                state=state, 
                 session=session,
                 user_id=user_id,
                 latitude=location.latitude,

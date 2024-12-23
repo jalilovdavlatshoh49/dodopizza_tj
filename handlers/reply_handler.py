@@ -338,10 +338,8 @@ async def edit_address_manual(message: types.Message, state: FSMContext):
 @reply_router.message(EditUserDataStates.choose_address_method)
 async def edit_address_map_start(message: types.Message, state: FSMContext):
     await state.set_state(EditUserDataStates.input_address_map)
-    await message.answer("Лутфан суроғаи худро тавассути харита фиристед:")
-
-@reply_router.message(EditUserDataStates.input_address_map)
-async def edit_location_address_handler(message: types.Message, state: FSMContext):
+    
+    
     user_id = message.from_user.id
 
     if message.location:

@@ -212,6 +212,22 @@ address_edit_method_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+async def update_user_location(session, user_id, latitude, longitude, address):
+    """
+    Навсозии Latitude, Longitude ва Address дар ҷадвали Order барои корбар
+    """
+    result = await session.execute(select(Order).filter(Order.user_id == user_id))
+    user_order = result.scalars().first()
+
+    if user_order:
+        user_order.latitude = latitude
+        user_order.longitude = longitude
+        user_order.address = address
+        await session.commit()
+        return True
+    return False
+
+
 # Handler for location-based address input
 @reply_router.message(UserDataStates.choose_address_method)
 async def input_location_address_handler(message: Message, state: FSMContext):
@@ -224,27 +240,30 @@ async def input_location_address_handler(message: Message, state: FSMContext):
 
         # Сабт кардани маълумот
         async with SessionLocal() as session:
-            await save_address_and_finish(
-                message=message, 
-                state=state, 
-                session=session, 
-                address=address
+            success = await update_user_location(
+                session=session,
+                user_id=user_id,
+                latitude=location.latitude,
+                longitude=location.longitude,
+                address=address,
             )
 
-            # Ҷустуҷӯи маълумотҳои корбар
-            result = await session.execute(select(Order).filter(Order.user_id == user_id))
-            user_data = result.scalars().first()
+            if success:
+                # Ҷустуҷӯи маълумотҳои корбар
+                result = await session.execute(select(Order).filter(Order.user_id == user_id))
+                user_data = result.scalars().first()
 
-            if user_data:
-                text = (
-                    f"Ном: {user_data.customer_name}\n"
-                    f"Рақами телефон: {user_data.phone_number}\n"
-                    f"Суроға: {user_data.address or 'Номаълум'}"
-                )
-                await message.answer(text, reply_markup=edit_delete_keyboard)
+                if user_data:
+                    text = (
+                        f"Ном: {user_data.customer_name}\n"
+                        f"Рақами телефон: {user_data.phone_number}\n"
+                        f"Суроға: {user_data.address or 'Номаълум'}"
+                    )
+                    await message.answer(text, reply_markup=edit_delete_keyboard)
+                else:
+                    await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
             else:
-                await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
-
+                await message.answer("Хатогӣ ҳангоми сабти маълумот рух дод.")
     else:
         # Агар ҷойгиршавӣ фиристода нашавад
         await message.answer("Лутфан ҷойгиршавии худро фиристед.")

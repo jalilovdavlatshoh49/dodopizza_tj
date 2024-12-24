@@ -28,7 +28,7 @@ class UserDataStates(StatesGroup):
     choose_address_method = State()
     input_address_manual = State()
     input_address_location = State()
-    edit_data = State()
+    after_pressing_which_key = State()
 
 
 
@@ -110,7 +110,84 @@ async def menu_handler(message: types.Message):
 
 
 
+# Функсия барои ирсоли фармоиш ба администратор
+async def send_order_to_admin(order, admin_id: int, message):
+    """Ирсоли фармоиш ба администратор."""
+    products_info = [
+        f"Маҳсулот: {item.product_type}\n"
+        f"ID: {item.product_id}\n"
+        f"Миқдор: {item.quantity}"
+        for item in order.cart.items
+    ]
 
+    order_message = (
+        f"Фармоиши нав аз {order.customer_name} ({order.phone_number}):\n"
+        f"Нишонӣ: {order.address if order.address else 'Нишонӣ дастрас нест'}\n\n" +
+        "\n\n".join(products_info)
+    )
+    
+    # Ирсоли паём ва координатаҳо ё нишонӣ
+    if order.latitude and order.longitude:
+        await message.bot.send_message(admin_id, order_message)
+        await message.bot.send_location(admin_id, latitude=order.latitude, longitude=order.longitude)
+    else:
+        await message.bot.send_message(admin_id, order_message)
+
+# Ҳалли логика барои "Оформить заказ"
+@reply_router.message(Command("оформить_заказ"))
+async def оформить_заказ(message: Message, bot, session, state):
+    user_id = message.from_user.id
+
+
+
+
+    # Ҷустуҷӯи сабади истифодабаранда
+    result = await session.execute(
+        select(Cart)
+        .filter(Cart.user_id == user_id)
+        .filter(Cart.order == None)
+        .options(joinedload(Cart.items))
+    )
+    cart = result.scalars().first()
+
+    if not cart:
+        await message.reply("Сабади шумо холӣ аст!")
+        return
+
+    # Ҷустуҷӯи фармоиши пешина
+    existing_order = await session.execute(
+        select(Order).filter(Order.user_id == user_id)
+    )
+    existing_order = existing_order.scalars().first()
+
+    # Агар маълумоти зарурӣ вуҷуд надошта бошад
+    if not existing_order or not all(
+        [existing_order.customer_name, existing_order.phone_number]
+    ):
+        await state.set_state(UserDataStates.after_presing_which_key)
+        await state.update_data(after_pressing_which_key="offer_order")
+        await state.set_state(UserDataStates.input_name)
+        await message.answer("Лутфан номи худро ворид кунед:")
+        return
+
+
+    # Ҳисоб кардани нархи умумӣ
+    total_price = await cart.get_total_price(session)
+
+    # Ташкили фармоиш
+    new_order = Order(
+        cart=cart 
+    )
+    session.add(new_order)
+    await session.commit()
+    await session.refresh(new_order)
+
+    # Ирсоли фармоиш ба администратор
+    admin_id = user_idх  # ID-и администратор
+    await send_order_to_admin(new_order, admin_id, bot)
+
+    # Ҷавоб ба истифодабаранда
+    await message.reply(f"Фармоиш ба маблағи {total_price} сомонӣ қабул шуд!")
 
 
 

@@ -135,7 +135,7 @@ async def send_order_to_admin(order, admin_id: int, message):
 
 # Ҳалли логика барои "Оформить заказ"
 @reply_router.message(Command("оформить_заказ"))
-async def оформить_заказ(message: Message, bot, session, state):
+async def оформить_заказ(message: Message, session, state):
     user_id = message.from_user.id
 
 
@@ -184,7 +184,7 @@ async def оформить_заказ(message: Message, bot, session, state):
 
     # Ирсоли фармоиш ба администратор
     admin_id = user_idх  # ID-и администратор
-    await send_order_to_admin(new_order, admin_id, bot)
+    await send_order_to_admin(new_order, admin_id, message)
 
     # Ҷавоб ба истифодабаранда
     await message.reply(f"Фармоиш ба маблағи {total_price} сомонӣ қабул шуд!")
@@ -223,6 +223,8 @@ async def show_user_data(message: types.Message, state: FSMContext):
             await message.answer(text, reply_markup=edit_delete_keyboard)
 
         else:
+            await state.set_state(UserDataStates.after_presing_which_key)
+            await state.update_data(after_pressing_which_key="registration_key")
             # Агар маълумот вуҷуд надошта бошад
             await state.set_state(UserDataStates.input_name)
             await message.answer("Лутфан номи худро ворид кунед:")

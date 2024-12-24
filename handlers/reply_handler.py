@@ -258,6 +258,9 @@ async def choose_manual_address(message: types.Message, state: FSMContext):
 @reply_router.message(UserDataStates.input_address_manual)
 async def input_manual_address_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
+    user_data = await state.get_data()
+    after_pressing_which_key = user_data.get("after_pressing_which_key")
+
     async with SessionLocal() as session:
         # Сабти маълумот ба база
         await save_address_and_finish(
@@ -280,6 +283,14 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
             await message.answer(text, reply_markup=edit_delete_keyboard)
         else:
             await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
+    if after_pressing_which_key == "offer_order":
+        # Ирсоли фармоиш ба администратор
+        admin_id = user_id  # ID-и администратор
+        await send_order_to_admin(new_order, admin_id, message)
+
+        # Ҷавоб ба истифодабаранда
+        await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
+
 
 # Клавиатураи интихоб барои иваз кардани суроға
 address_edit_method_keyboard = ReplyKeyboardMarkup(
@@ -294,7 +305,7 @@ address_edit_method_keyboard = ReplyKeyboardMarkup(
 async def save_location_data(message: types.Message, state: FSMContext, session: AsyncSession, user_id, latitude, longitude):
     user_id = message.from_user.id
     user_data = await state.get_data()
-    after_pressing_which_key = user_data.get("after_pressing_which_key")
+    
         # Агар Order мавҷуд набошад, Order-и нав месозем
     order = Order(
         cart=None, 
@@ -313,18 +324,14 @@ async def save_location_data(message: types.Message, state: FSMContext, session:
     # Ҳолати истифодабарандаро тоза мекунем
     await state.clear()
     await message.answer("Маълумот бо муваффақият сабт шуд.", reply_markup=main_keyboard)
-    if after_pressing_which_key == "offer_order":
-        # Ирсоли фармоиш ба администратор
-        admin_id = user_id  # ID-и администратор
-        await send_order_to_admin(new_order, admin_id, message)
-
-        # Ҷавоб ба истифодабаранда
-        await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
+    
 
 # Handler for location-based address input
 @reply_router.message(UserDataStates.choose_address_method)
 async def input_location_address_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
+    user_data = await state.get_data()
+    after_pressing_which_key = user_data.get("after_pressing_which_key")
 
     # Санҷиши оё корбар ҷойгиршавӣ фиристодааст
     if message.location:
@@ -366,7 +373,13 @@ async def input_location_address_handler(message: Message, state: FSMContext):
         # Агар ҷойгиршавӣ фиристода нашавад
         await message.answer("Лутфан ҷойгиршавии худро фиристед.")
         # Ҳолати FSM-и корбарро тоза намекунем, то ӯ боз кӯшиш кунад
-    
+    if after_pressing_which_key == "offer_order":
+        # Ирсоли фармоиш ба администратор
+        admin_id = user_id  # ID-и администратор
+        await send_order_to_admin(new_order, admin_id, message)
+
+        # Ҷавоб ба истифодабаранда
+        await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
 
 
 

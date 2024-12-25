@@ -173,7 +173,7 @@ async def handle_checkout(callback_query, state):
         # Ташкили фармоиш
         new_order = Order(
             user_id=user_id,
-            cart_id=cart.id,
+            cart=cart,
             total_price=total_price,
         )
         session.add(new_order)

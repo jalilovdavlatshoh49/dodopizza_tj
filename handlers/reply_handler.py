@@ -182,14 +182,14 @@ async def оформить_заказ(message: Message, session, state):
     await session.commit()
     await session.refresh(new_order)
     # Гирифтани фармоиши сабтшуда аз пойгоҳи додаҳо
-result_new_order = await session.execute(
+    result_new_order = await session.execute(
     select(Order).filter(Order.user_id == user_id).order_by(Order.id.desc())
 )
-existing_new_order = result.scalars().first()
+    existing_new_order = result.scalars().first()
 
-if not existing_new_order:
-    await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
-    return
+    if not existing_new_order:
+        await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
+        return
 
     # Ирсоли фармоиш ба администратор
     admin_id = user_id  # ID-и администратор

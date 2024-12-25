@@ -181,10 +181,19 @@ async def оформить_заказ(message: Message, session, state):
     session.add(new_order)
     await session.commit()
     await session.refresh(new_order)
+    # Гирифтани фармоиши сабтшуда аз пойгоҳи додаҳо
+result_new_order = await session.execute(
+    select(Order).filter(Order.user_id == user_id).order_by(Order.id.desc())
+)
+existing_new_order = result.scalars().first()
+
+if not existing_new_order:
+    await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
+    return
 
     # Ирсоли фармоиш ба администратор
     admin_id = user_id  # ID-и администратор
-    await send_order_to_admin(new_order, admin_id, message)
+    await send_order_to_admin(existing_new_order, admin_id, message)
 
     # Ҷавоб ба истифодабаранда
     await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
@@ -284,9 +293,19 @@ async def input_manual_address_handler(message: types.Message, state: FSMContext
         else:
             await message.answer("Хатогӣ рух дод. Лутфан бори дигар кӯшиш кунед.")
     if after_pressing_which_key == "offer_order":
+        # Гирифтани фармоиши сабтшуда аз пойгоҳи додаҳо
+        result_new_order = await session.execute(select(Order).filter(Order.user_id == user_id).order_by(Order.id.desc())
+)
+        existing_new_order = result.scalars().first()
+
+        if not existing_new_order:
+            await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
+            return
+
+        
         # Ирсоли фармоиш ба администратор
         admin_id = user_id  # ID-и администратор
-        await send_order_to_admin(new_order, admin_id, message)
+        await send_order_to_admin(existing_new_order, admin_id, message)
 
         # Ҷавоб ба истифодабаранда
         await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
@@ -374,9 +393,19 @@ async def input_location_address_handler(message: Message, state: FSMContext):
         await message.answer("Лутфан ҷойгиршавии худро фиристед.")
         # Ҳолати FSM-и корбарро тоза намекунем, то ӯ боз кӯшиш кунад
     if after_pressing_which_key == "offer_order":
+        # Гирифтани фармоиши сабтшуда аз пойгоҳи додаҳо
+        result_new_order = await session.execute(
+    select(Order).filter(Order.user_id == user_id).order_by(Order.id.desc())
+)
+        existing_new_order = result.scalars().first()
+
+        if not existing_new_order:
+            await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
+            return
+
         # Ирсоли фармоиш ба администратор
         admin_id = user_id  # ID-и администратор
-        await send_order_to_admin(new_order, admin_id, message)
+        await send_order_to_admin(existing_new_order, admin_id, message)
 
         # Ҷавоб ба истифодабаранда
         await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")

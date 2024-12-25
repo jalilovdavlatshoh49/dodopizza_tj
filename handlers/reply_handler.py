@@ -133,9 +133,8 @@ async def send_order_to_admin(order, admin_id: int, message):
     else:
         await message.bot.send_message(admin_id, order_message)
 
-# Ҳалли логика барои "Оформить заказ"
-@reply_router.message(Command("оформить_заказ"))
-async def оформить_заказ(message: Message, session, state):
+@reply_router.callback_query(lambda c: c.data == "checkout")
+async def handle_checkout(message: Message, session, state):
     user_id = message.from_user.id
 
 

@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
@@ -18,7 +19,6 @@ from aiogram.types import (
 
 reply_router = Router()
 
-session = SessionLocal()
 
 
 # FSM States
@@ -133,69 +133,73 @@ async def send_order_to_admin(order, admin_id: int, message):
     else:
         await message.bot.send_message(admin_id, order_message)
 
+
 @reply_router.callback_query(lambda c: c.data == "checkout")
-async def handle_checkout(message: Message, session, state):
-    user_id = message.from_user.id
+async def handle_checkout(callback_query, state):
+    user_id = callback_query.from_user.id
 
+    async with SessionLocal() as session:
+        # Ҷустуҷӯи сабади истифодабаранда
+        result = await session.execute(
+            select(Cart)
+            .filter(Cart.user_id == user_id)
+            .filter(Cart.order == None)
+            .options(joinedload(Cart.items))
+        )
+        cart = result.scalars().first()
 
+        if not cart:
+            await callback_query.message.reply("Сабади шумо холӣ аст!")
+            return
 
+        # Ҷустуҷӯи фармоиши пешина
+        result = await session.execute(
+            select(Order).filter(Order.user_id == user_id)
+        )
+        existing_order = result.scalars().first()
 
-    # Ҷустуҷӯи сабади истифодабаранда
-    result = await session.execute(
-        select(Cart)
-        .filter(Cart.user_id == user_id)
-        .filter(Cart.order == None)
-        .options(joinedload(Cart.items))
-    )
-    cart = result.scalars().first()
+        # Агар маълумоти зарурӣ вуҷуд надошта бошад
+        if not existing_order or not all(
+            [existing_order.customer_name, existing_order.phone_number]
+        ):
+            await state.update_data(after_pressing_which_key="offer_order")
+            await state.set_state(UserDataStates.input_name)
+            await callback_query.message.answer("Лутфан номи худро ворид кунед:")
+            return
 
-    if not cart:
-        await message.reply("Сабади шумо холӣ аст!")
-        return
+        # Ҳисоб кардани нархи умумӣ
+        total_price = await cart.get_total_price(session)
 
-    # Ҷустуҷӯи фармоиши пешина
-    existing_order = await session.execute(
-        select(Order).filter(Order.user_id == user_id)
-    )
-    existing_order = existing_order.scalars().first()
+        # Ташкили фармоиш
+        new_order = Order(
+            user_id=user_id,
+            cart_id=cart.id,
+            total_price=total_price,
+        )
+        session.add(new_order)
+        await session.commit()
+        await session.refresh(new_order)
 
-    # Агар маълумоти зарурӣ вуҷуд надошта бошад
-    if not existing_order or not all(
-        [existing_order.customer_name, existing_order.phone_number]
-    ):
-        await state.set_state(UserDataStates.after_presing_which_key)
-        await state.update_data(after_pressing_which_key="offer_order")
-        await state.set_state(UserDataStates.input_name)
-        await message.answer("Лутфан номи худро ворид кунед:")
-        return
+        # Санҷиши фармоиши нав
+        result_new_order = await session.execute(
+            select(Order)
+            .filter(Order.user_id == user_id)
+            .order_by(Order.id.desc())
+        )
+        existing_new_order = result_new_order.scalars().first()
 
+        if not existing_new_order:
+            await callback_query.message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
+            return
 
-    # Ҳисоб кардани нархи умумӣ
-    total_price = await cart.get_total_price(session)
+        # Ирсоли фармоиш ба администратор
+        admin_id = user_id  # ID-и администраторро дар инҷо таъин кунед
+        await send_order_to_admin(existing_new_order, admin_id, callback_query.message)
 
-    # Ташкили фармоиш
-    new_order = Order(
-        cart=cart 
-    )
-    session.add(new_order)
-    await session.commit()
-    await session.refresh(new_order)
-    # Гирифтани фармоиши сабтшуда аз пойгоҳи додаҳо
-    result_new_order = await session.execute(
-    select(Order).filter(Order.user_id == user_id).order_by(Order.id.desc())
-)
-    existing_new_order = result.scalars().first()
-
-    if not existing_new_order:
-        await message.reply("Хатогӣ: Фармоиш аз пойгоҳи додаҳо ёфт нашуд!")
-        return
-
-    # Ирсоли фармоиш ба администратор
-    admin_id = user_id  # ID-и администратор
-    await send_order_to_admin(existing_new_order, admin_id, message)
-
-    # Ҷавоб ба истифодабаранда
-    await message.reply(f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед.")
+        # Ҷавоб ба истифодабаранда
+        await callback_query.message.reply(
+            f"Фармоиш ба маблағи {total_price} ба админ ирсол карда шуд. Ҷавоби админро интизор шавед."
+        )
 
 
 

@@ -115,7 +115,7 @@ async def send_orders_page(message, chat_id: int, page: int):
             keyboard.inline_keyboard.append(navigation_buttons)
 
         # Фиристодани паём
-        await admin_accept.bot.send_message(chat_id, text, reply_markup=keyboard)
+        await message.bot.send_message(chat_id, text, reply_markup=keyboard)
 
 
 # Callback барои қабул ва рад кардани заказ

@@ -30,7 +30,7 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     cart_id = Column(Integer, ForeignKey('cart.id'))  # Равиш ба сабад
     cart = relationship("Cart", back_populates="order")
-
+    total_price = Column(Float, nullable=False)  # Ensure this field exists
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
 
     customer_name = Column(String(255), index=True)  
@@ -47,6 +47,7 @@ class Order(Base):
         self.customer_name = customer_name
         self.phone_number = phone_number
         self.user_id = user_id
+        self.total_price = total_price
         self.status = OrderStatus.PENDING
         self.address = address
         self.latitude = latitude

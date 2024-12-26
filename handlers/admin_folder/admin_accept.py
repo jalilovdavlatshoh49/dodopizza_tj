@@ -66,7 +66,7 @@ ORDERS_PER_PAGE = 5
 
 
 # Функсияи пахши тугмаи "📋 Заказҳои интизорӣ"
-@admin_accept.message(text="📋 Заказҳои интизорӣ (қабул нашуда)")
+@admin_accept.message(lambda message: message.text == "📋 Заказҳои интизорӣ (қабул нашуда)")
 async def show_pending_orders(message: types.Message):
     page = 1  # Саҳифаи аввал
     await send_orders_page(message.chat.id, page)

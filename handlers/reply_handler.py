@@ -174,7 +174,6 @@ async def handle_checkout(callback_query, state):
         new_order = Order(
             user_id=user_id,
             cart=cart,
-            total_price=total_price,
         )
         session.add(new_order)
         await session.commit()

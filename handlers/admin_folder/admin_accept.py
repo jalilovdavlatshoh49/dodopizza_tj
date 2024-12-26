@@ -69,7 +69,8 @@ ORDERS_PER_PAGE = 5
 @admin_accept.message(lambda message: message.text == "📋 Заказҳои интизорӣ (қабул нашуда)")
 async def show_pending_orders(message: types.Message):
     page = 1  # Саҳифаи аввал
-    await send_orders_page(message.chat.id, page)
+    user_id = message.user.id
+    await send_orders_page(user_id, page)
 
 
 # Функсия барои фиристодани заказҳои саҳифаи интихобшуда
@@ -113,7 +114,7 @@ async def send_orders_page(chat_id: int, page: int):
 
 
 # Callback барои қабул ва рад кардани заказ
-@admin_accept.callback_query_handler(lambda call: call.data.startswith("accept_") or call.data.startswith("reject_"))
+@admin_accept.callback_query(lambda call: call.data.startswith("accept_") or call.data.startswith("reject_"))
 async def handle_order_action(callback_query: types.CallbackQuery):
     action, order_id = callback_query.data.split("_")
     order_id = int(order_id)
@@ -136,7 +137,7 @@ async def handle_order_action(callback_query: types.CallbackQuery):
 
 
 # Callback барои паймоиш байни саҳифаҳо
-@admin_accept.callback_query_handler(lambda call: call.data.startswith("page_"))
+@admin_accept.callback_query(lambda call: call.data.startswith("page_"))
 async def handle_pagination(callback_query: types.CallbackQuery):
     page = int(callback_query.data.split("_")[1])
     await send_orders_page(callback_query.message.chat.id, page)

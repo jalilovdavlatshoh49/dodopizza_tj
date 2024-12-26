@@ -70,13 +70,13 @@ ORDERS_PER_PAGE = 5
 async def show_pending_orders(message: types.Message):
     page = 1  # Саҳифаи аввал
     user_id = message.from_user.id
-    await send_orders_page(user_id, page)
+    await send_orders_page(message, user_id, page)
 
 
 
 
 # Функсия барои фиристодани заказҳои саҳифаи интихобшуда
-async def send_orders_page(chat_id: int, page: int):
+async def send_orders_page(message, chat_id: int, page: int):
     async with SessionLocal() as session:  # Сессияи пойгоҳи додаҳо
         offset = (page - 1) * ORDERS_PER_PAGE
         result = await session.execute(
@@ -85,7 +85,7 @@ async def send_orders_page(chat_id: int, page: int):
         orders = result.scalars().all()
 
         if not orders:
-            await admin_accept.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")
+            await message.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")
             return
 
         # Сохтани клавиатура

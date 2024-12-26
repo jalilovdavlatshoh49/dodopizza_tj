@@ -42,7 +42,7 @@ class Order(Base):
     latitude = Column(Float, nullable=True)       
     longitude = Column(Float, nullable=True)
 
-    def __init__(self, cart, customer_name, phone_number, user_id, address=None, latitude=None, longitude=None):
+    def __init__(self, cart, customer_name, phone_number, user_id, total_price, address=None, latitude=None, longitude=None):
         self.cart = cart
         self.customer_name = customer_name
         self.phone_number = phone_number

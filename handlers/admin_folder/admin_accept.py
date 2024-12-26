@@ -73,6 +73,8 @@ async def show_pending_orders(message: types.Message):
     await send_orders_page(user_id, page)
 
 
+
+
 # Функсия барои фиристодани заказҳои саҳифаи интихобшуда
 async def send_orders_page(chat_id: int, page: int):
     async with SessionLocal() as session:  # Сессияи пойгоҳи додаҳо
@@ -86,7 +88,8 @@ async def send_orders_page(chat_id: int, page: int):
             await admin_accept.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")
             return
 
-        keyboard = InlineKeyboardMarkup()
+        # Сохтани клавиатура
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
         text = "📋 Заказҳои интизорӣ:\n\n"
         for order in orders:
             text += (
@@ -95,10 +98,11 @@ async def send_orders_page(chat_id: int, page: int):
                 f"Телефон: {order.phone_number}\n"
                 f"Нишонӣ: {order.address}\n\n"
             )
-            keyboard.add(
+            # Илова кардани тугмаҳо барои ҳар як заказ
+            keyboard.inline_keyboard.append([
                 InlineKeyboardButton(text="Қабул кардан", callback_data=f"accept_{order.id}"),
                 InlineKeyboardButton(text="Рад кардан", callback_data=f"reject_{order.id}")
-            )
+            ])
 
         # Тугмаҳои саҳифабандӣ
         navigation_buttons = []
@@ -108,8 +112,9 @@ async def send_orders_page(chat_id: int, page: int):
             navigation_buttons.append(InlineKeyboardButton(text="➡️ Баъдӣ", callback_data=f"page_{page+1}"))
 
         if navigation_buttons:
-            keyboard.add(*navigation_buttons)
+            keyboard.inline_keyboard.append(navigation_buttons)
 
+        # Фиристодани паём
         await admin_accept.bot.send_message(chat_id, text, reply_markup=keyboard)
 
 

@@ -69,7 +69,7 @@ ORDERS_PER_PAGE = 5
 @admin_accept.message(lambda message: message.text == "📋 Заказҳои интизорӣ (қабул нашуда)")
 async def show_pending_orders(message: types.Message):
     page = 1  # Саҳифаи аввал
-    user_id = message.user.id
+    user_id = message.from_user.id
     await send_orders_page(user_id, page)
 
 

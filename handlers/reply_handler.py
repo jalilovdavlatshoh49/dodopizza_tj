@@ -170,26 +170,15 @@ async def handle_checkout(callback_query, state):
         # Ҳисоб кардани нархи умумӣ
         total_price = await cart.get_total_price(session)
 
-        # Ташкили фармоиш вобаста ба мавҷудияти longitude ва latitude
-        if hasattr(cart, "longitude") and hasattr(cart, "latitude"):
-            new_order = Order(
-                user_id=user_id,
-                cart=cart,
-                customer_name=existing_order.customer_name,
-                phone_number=existing_order.phone_number,
-                address=f"{cart.latitude}, {cart.longitude}"
-            )
-        else:
-            new_order = Order(
-                user_id=user_id,
-                cart=cart,
-                customer_name=existing_order.customer_name,
-                phone_number=existing_order.phone_number,
-                address=existing_order.address
-            )
-        session.add(new_order)
+        # Ҳисоб кардани нархи умумӣ
+        total_price = await cart.get_total_price(session)
+
+        # Навсозии фармоиши мавҷуда
+        existing_order.cart = cart
+        
         await session.commit()
-        await session.refresh(new_order)
+        await session.refresh(existing_order)
+
 
         # Санҷиши фармоиши нав
         result_new_order = await session.execute(

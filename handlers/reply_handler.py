@@ -117,13 +117,12 @@ async def send_order_to_admin(order, admin_id: int, message, session):
     
     for item in order.cart.items:
         # Гирифтани номи маҳсулот аз датабейз
-        product = await db_session.get(Product, item.product_id)  # Product - модели маҳсулот
+        product = await session.get(Product, item.product_id)  # Product - модели маҳсулот
         product_name = product.name if product else "Номи номаълум"
         
         # Илова кардани маълумот ба рӯйхат
         products_info.append(
             f"Маҳсулот: {product_name} ({item.product_type})\n"
-            f"ID: {item.product_id}\n"
             f"Миқдор: {item.quantity}"
         )
     

@@ -91,7 +91,9 @@ PRODUCT_TABLES = {
     'OtherGoods': OtherGoods,
 }
 
-# Функсия барои фиристодани заказҳои саҳифаи интихобшуда бо маълумотҳои маҳсулот
+
+
+# Функсия барои фиристодани заказҳои саҳифаи интихобшуда
 async def send_orders_page(message, chat_id: int, page: int):
     async with SessionLocal() as session:
         offset = (page - 1) * ORDERS_PER_PAGE
@@ -108,61 +110,68 @@ async def send_orders_page(message, chat_id: int, page: int):
             await message.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")
             return
 
-        # Сохтани клавиатура
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-        text = "📋 Заказҳои интизорӣ:\n\n"
         for order in orders:
-            text += (
-                f"🆔 ID: {order.id}\n"
+            text = (
+                f"📋 Заказ аз:\n"
                 f"👤 Муштарӣ: {order.customer_name}\n"
                 f"📞 Телефон: {order.phone_number}\n"
-                f"📍 Нишонӣ: {order.address if order.address else 'Дастрас нест'}\n"
+                f"📍 Нишонӣ: {order.address if order.address else 'Дастрас нест'}\n\n"
                 f"📦 Маҳсулотҳо:\n"
             )
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
             if order.cart and order.cart.items:
                 for item in order.cart.items:
                     product_table = PRODUCT_TABLES.get(item.product_type)
                     product = await session.get(product_table, item.product_id) if product_table else None
-                    
-                    if product:  # Санҷиш барои None
-                        product_name = product.name
-                        item_price = product.price
+
+                    if product:
                         text += (
-                            f"  - Ном: {product_name}\n"
-                            f"    Тип: {item.product_type or 'Номаълум'}\n"
-                            f"    ID: {item.product_id}\n"
+                            f"  - Ном: {product.name}\n"
                             f"    Миқдор: {item.quantity}\n"
-                            f"    Нархи ягона: {item_price} сомонӣ\n"
-                            f"    Нархи умумӣ: {item.quantity * item_price} сомонӣ\n\n"
+                            f"    Нархи ягона: {product.price} сомонӣ\n"
+                            f"    Нархи умумӣ: {item.quantity * product.price} сомонӣ\n\n"
                         )
                     else:
                         text += (
-                            f"  - Ном: Номи номаълум\n"
-                            f"    Тип: {item.product_type or 'Номаълум'}\n"
-                            f"    ID: {item.product_id}\n"
+                            f"  - Ном: Номаълум\n"
                             f"    Миқдор: {item.quantity}\n"
                             f"    Нархи ягона: Номаълум\n"
                             f"    Нархи умумӣ: Номаълум\n\n"
                         )
+
+                    # Тугмаҳо барои ҳар як маҳсулот
+                    keyboard.inline_keyboard.append([
+                        InlineKeyboardButton(
+                            text="✅ Қабул кардан",
+                            callback_data=f"accept_{item.id}_{order.customer_id}"
+                        ),
+                        InlineKeyboardButton(
+                            text="❌ Рад кардан",
+                            callback_data=f"reject_{item.id}_{order.customer_id}"
+                        )
+                    ])
             else:
                 text += "  Маҳсулот вуҷуд надорад.\n\n"
 
-            keyboard.inline_keyboard.append([
-                InlineKeyboardButton(text="✅ Қабул кардан", callback_data=f"accept_{order.id}"),
-                InlineKeyboardButton(text="❌ Рад кардан", callback_data=f"reject_{order.id}")
-            ])
+            # Фиристодани паём барои ҳар як клиент
+            await message.bot.send_message(chat_id, text, reply_markup=keyboard)
 
+        # Тугмаҳои навигатсия
         navigation_buttons = []
         if page > 1:
-            navigation_buttons.append(InlineKeyboardButton(text="⬅️ Пешина", callback_data=f"page_{page-1}"))
+            navigation_buttons.append(
+                InlineKeyboardButton(text="⬅️ Пешина", callback_data=f"page_{page-1}")
+            )
         if len(orders) == ORDERS_PER_PAGE:
-            navigation_buttons.append(InlineKeyboardButton(text="➡️ Баъдӣ", callback_data=f"page_{page+1}"))
+            navigation_buttons.append(
+                InlineKeyboardButton(text="➡️ Баъдӣ", callback_data=f"page_{page+1}")
+            )
 
         if navigation_buttons:
-            keyboard.inline_keyboard.append(navigation_buttons)
-
-        await message.bot.send_message(chat_id, text, reply_markup=keyboard)
+            nav_keyboard = InlineKeyboardMarkup(inline_keyboard=[navigation_buttons])
+            await message.bot.send_message(chat_id, "📄 Навигатсия:", reply_markup=nav_keyboard)
 
 
 # Callback барои қабул ва рад кардани заказ

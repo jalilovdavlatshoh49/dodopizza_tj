@@ -111,21 +111,29 @@ async def menu_handler(message: types.Message):
 
 
 # Функсия барои ирсоли фармоиш ба администратор
-async def send_order_to_admin(order, admin_id: int, message):
+async def send_order_to_admin(order, admin_id: int, message, session):
     """Ирсоли фармоиш ба администратор."""
-    products_info = [
-        f"Маҳсулот: {item.product_type}\n"
-        f"ID: {item.product_id}\n"
-        f"Миқдор: {item.quantity}"
-        for item in order.cart.items
-    ]
-
+    products_info = []
+    
+    for item in order.cart.items:
+        # Гирифтани номи маҳсулот аз датабейз
+        product = await db_session.get(Product, item.product_id)  # Product - модели маҳсулот
+        product_name = product.name if product else "Номи номаълум"
+        
+        # Илова кардани маълумот ба рӯйхат
+        products_info.append(
+            f"Маҳсулот: {product_name} ({item.product_type})\n"
+            f"ID: {item.product_id}\n"
+            f"Миқдор: {item.quantity}"
+        )
+    
+    # Пайғом барои админ
     order_message = (
         f"Фармоиши нав аз {order.customer_name} ({order.phone_number}):\n"
         f"Нишонӣ: {order.address if order.address else 'Нишонӣ дастрас нест'}\n\n" +
         "\n\n".join(products_info)
     )
-    
+
     # Ирсоли паём ва координатаҳо ё нишонӣ
     if order.latitude and order.longitude:
         await message.bot.send_message(admin_id, order_message)
@@ -194,7 +202,7 @@ async def handle_checkout(callback_query, state):
 
         # Ирсоли фармоиш ба администратор
         admin_id = user_id  # ID-и администраторро дар инҷо таъин кунед
-        await send_order_to_admin(existing_new_order, admin_id, callback_query.message)
+        await send_order_to_admin(existing_new_order, admin_id, callback_query.message, session)
 
         # Ҷавоб ба истифодабаранда
         await callback_query.message.reply(

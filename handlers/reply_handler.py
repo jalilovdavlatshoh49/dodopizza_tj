@@ -138,19 +138,20 @@ async def send_order_to_admin(order, admin_id: int, message, session):
             # Гирифтани номи маҳсулот аз датабейз
             product = await session.get(product_model, item.product_id)
             product_name = product.name if product else "Номи номаълум"
+            item_price = product.price
         else:
             product_name = "Номи номаълум"
 
         # Ҳисоби нархи умумӣ
-        total_price += item.quantity * item.price
+        total_price += item.quantity * item_price
 
         # Илова кардани маълумот ба рӯйхат
         products_info.append(
             f"Маҳсулот: {product_name} ({item.product_type})\n"
             f"ID: {item.product_id}\n"
             f"Миқдор: {item.quantity}\n"
-            f"Нархи ягона: {item.price} сомонӣ\n"
-            f"Нархи умумӣ: {item.quantity * item.price} сомонӣ"
+            f"Нархи ягона: {item_price} сомонӣ\n"
+            f"Нархи умумӣ: {item.quantity * item_price} сомонӣ"
         )
 
     # Пайғом барои админ

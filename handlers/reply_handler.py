@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from functions.all_func import get_category_keyboard, get_cart_items, get_order_history, get_user_info
 from aiogram.types import InputMediaPhoto
 from database.db import SessionLocal, Order, Cart
+from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kidslove, OtherGoods
 from handlers.menu_handler import get_custom_menu_keyboard
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -110,16 +111,35 @@ async def menu_handler(message: types.Message):
 
 
 
+
 # Функсия барои ирсоли фармоиш ба администратор
 async def send_order_to_admin(order, admin_id: int, message, session):
     """Ирсоли фармоиш ба администратор."""
     products_info = []
     total_price = 0  # Ҳисоби нархи умумӣ
 
+    # Маппинг барои модели маҳсулот
+    product_models = {
+        "Pizza": Pizza,
+        "Combo": Combo,
+        "Snacks": Snacks,
+        "Desserts": Desserts,
+        "Drinks": Drinks,
+        "Sauces": Sauces,
+        "Kidslove": Kidslove,
+        "OtherGoods": OtherGoods
+    }
+
     for item in order.cart.items:
-        # Гирифтани номи маҳсулот аз датабейз
-        product = await session.get(Product, item.product_id)  # Product - модели маҳсулот
-        product_name = product.name if product else "Номи номаълум"
+        # Гирифтани модели маҳсулот мувофиқи типи маҳсулот
+        product_model = product_models.get(item.product_type)
+
+        if product_model:
+            # Гирифтани номи маҳсулот аз датабейз
+            product = await session.get(product_model, item.product_id)
+            product_name = product.name if product else "Номи номаълум"
+        else:
+            product_name = "Номи номаълум"
 
         # Ҳисоби нархи умумӣ
         total_price += item.quantity * item.price

@@ -87,7 +87,9 @@ async def send_orders_page(message, chat_id: int, page: int):
             .offset(offset)
             .limit(ORDERS_PER_PAGE)
         )
-        orders = result.scalars().all()
+        
+        orders = result.unique().scalars().all()
+
 
         if not orders:
             await message.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")

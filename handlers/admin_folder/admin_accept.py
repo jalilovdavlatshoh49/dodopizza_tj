@@ -124,16 +124,27 @@ async def send_orders_page(message, chat_id: int, page: int):
                 for item in order.cart.items:
                     product_table = PRODUCT_TABLES.get(item.product_type)
                     product = await session.get(product_table, item.product_id) if product_table else None
-                    product_name = product.name if product else "Номи номаълум"
-                    item_price = product.price
-                    text += (
-                        f"  - Ном: {product_name}\n"
-                        f"    Тип: {item.product_type or 'Номаълум'}\n"
-                        f"    ID: {item.product_id}\n"
-                        f"    Миқдор: {item.quantity}\n"
-                        f"    Нархи ягона: {item_price} сомонӣ\n"
-                        f"    Нархи умумӣ: {item.quantity * item_price} сомонӣ\n\n"
-                    )
+                    
+                    if product:  # Санҷиш барои None
+                        product_name = product.name
+                        item_price = product.price
+                        text += (
+                            f"  - Ном: {product_name}\n"
+                            f"    Тип: {item.product_type or 'Номаълум'}\n"
+                            f"    ID: {item.product_id}\n"
+                            f"    Миқдор: {item.quantity}\n"
+                            f"    Нархи ягона: {item_price} сомонӣ\n"
+                            f"    Нархи умумӣ: {item.quantity * item_price} сомонӣ\n\n"
+                        )
+                    else:
+                        text += (
+                            f"  - Ном: Номи номаълум\n"
+                            f"    Тип: {item.product_type or 'Номаълум'}\n"
+                            f"    ID: {item.product_id}\n"
+                            f"    Миқдор: {item.quantity}\n"
+                            f"    Нархи ягона: Номаълум\n"
+                            f"    Нархи умумӣ: Номаълум\n\n"
+                        )
             else:
                 text += "  Маҳсулот вуҷуд надорад.\n\n"
 

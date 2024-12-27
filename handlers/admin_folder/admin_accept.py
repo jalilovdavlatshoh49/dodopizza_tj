@@ -3,6 +3,7 @@ from sqlalchemy.future import select
 from database.tables import OrderStatus  # Ба модели худ истинод кунед
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from database.db import Cart, Order, SessionLocal
+from database.tables import Pizza, Combo, Snacks, Desserts, Drinks, Sauces, Kidslove, OtherGoods
 from sqlalchemy.orm import joinedload
 
 admin_accept = Router()
@@ -76,9 +77,23 @@ async def show_pending_orders(message: types.Message):
 
 
 
+
+
+# Маппинг типи маҳсулот ба ҷадвалҳои таблица
+PRODUCT_TABLES = {
+    'Pizza': Pizza,
+    'Combo': Combo,
+    'Snacks': Snacks,
+    'Desserts': Desserts,
+    'Drinks': Drinks,
+    'Sauces': Sauces,
+    'Kidslove': Kidslove,
+    'OtherGoods': OtherGoods,
+}
+
 # Функсия барои фиристодани заказҳои саҳифаи интихобшуда бо маълумотҳои маҳсулот
 async def send_orders_page(message, chat_id: int, page: int):
-    async with SessionLocal() as session:  # Сессияи пойгоҳи додаҳо
+    async with SessionLocal() as session:
         offset = (page - 1) * ORDERS_PER_PAGE
         result = await session.execute(
             select(Order)
@@ -87,10 +102,8 @@ async def send_orders_page(message, chat_id: int, page: int):
             .offset(offset)
             .limit(ORDERS_PER_PAGE)
         )
-        
+
         orders = result.unique().scalars().all()
-
-
         if not orders:
             await message.bot.send_message(chat_id, "Ҳеҷ закази интизорӣ нест.")
             return
@@ -107,15 +120,14 @@ async def send_orders_page(message, chat_id: int, page: int):
                 f"📦 Маҳсулотҳо:\n"
             )
 
-            # Намоиши маълумотҳои маҳсулот
             if order.cart and order.cart.items:
                 for item in order.cart.items:
-                    product = await session.get(Product, item.product_id)  # Гирифтани маълумоти маҳсулот
+                    product_table = PRODUCT_TABLES.get(item.product_type)
+                    product = await session.get(product_table, item.product_id) if product_table else None
                     product_name = product.name if product else "Номи номаълум"
-                    product_type = item.product_type if item.product_type else "Номаълум"
                     text += (
                         f"  - Ном: {product_name}\n"
-                        f"    Тип: {product_type}\n"
+                        f"    Тип: {item.product_type or 'Номаълум'}\n"
                         f"    ID: {item.product_id}\n"
                         f"    Миқдор: {item.quantity}\n"
                         f"    Нархи ягона: {item.price} сомонӣ\n"
@@ -124,13 +136,11 @@ async def send_orders_page(message, chat_id: int, page: int):
             else:
                 text += "  Маҳсулот вуҷуд надорад.\n\n"
 
-            # Илова кардани тугмаҳо барои ҳар як заказ
             keyboard.inline_keyboard.append([
                 InlineKeyboardButton(text="✅ Қабул кардан", callback_data=f"accept_{order.id}"),
                 InlineKeyboardButton(text="❌ Рад кардан", callback_data=f"reject_{order.id}")
             ])
 
-        # Тугмаҳои саҳифабандӣ
         navigation_buttons = []
         if page > 1:
             navigation_buttons.append(InlineKeyboardButton(text="⬅️ Пешина", callback_data=f"page_{page-1}"))
@@ -140,7 +150,6 @@ async def send_orders_page(message, chat_id: int, page: int):
         if navigation_buttons:
             keyboard.inline_keyboard.append(navigation_buttons)
 
-        # Фиристодани паём
         await message.bot.send_message(chat_id, text, reply_markup=keyboard)
 
 

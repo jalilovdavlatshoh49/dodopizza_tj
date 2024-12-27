@@ -145,11 +145,11 @@ async def send_orders_page(message, chat_id: int, page: int):
                     keyboard.inline_keyboard.append([
                         InlineKeyboardButton(
                             text="✅ Қабул кардан",
-                            callback_data=f"accept_{item.id}_{order.customer_id}"
+                            callback_data=f"accept_{item.id}_{order.user_id}"
                         ),
                         InlineKeyboardButton(
                             text="❌ Рад кардан",
-                            callback_data=f"reject_{item.id}_{order.customer_id}"
+                            callback_data=f"reject_{item.id}_{order.user_id}"
                         )
                     ])
             else:
@@ -174,14 +174,20 @@ async def send_orders_page(message, chat_id: int, page: int):
             await message.bot.send_message(chat_id, "📄 Навигатсия:", reply_markup=nav_keyboard)
 
 
+
+
 # Callback барои қабул ва рад кардани заказ
 @admin_accept.callback_query(lambda call: call.data.startswith("accept_") or call.data.startswith("reject_"))
 async def handle_order_action(callback_query: types.CallbackQuery):
-    action, order_id = callback_query.data.split("_")
+    action, order_id, user_id = callback_query.data.split("_")
     order_id = int(order_id)
+    user_id = int(user_id)
 
-    async with SessionLocal() as session:  # Сессияи пойгоҳи додаҳо
-        order = await session.get(Order, order_id)
+    async with SessionLocal() as session:  # Сессияи пойгоҳи дода
+        order_query = await session.execute(
+            select(Order).filter_by(id=order_id, user_id=user_id)
+        )
+        order = order_query.scalars().first()
 
         if not order:
             await callback_query.message.edit_text("Заказ ёфт нашуд.")
@@ -190,9 +196,19 @@ async def handle_order_action(callback_query: types.CallbackQuery):
         if action == "accept":
             order.status = OrderStatus.ACCEPTED
             await callback_query.message.edit_text(f"Заказ бо ID {order_id} қабул шуд.")
+            # Ирсоли хабар ба клиент
+            await bot.send_message(
+                chat_id=order.user_id,
+                text=f"Закази шуморо админ қабул кард. Интизор шавед то таёр шавад ва ба шумо расонанд."
+            )
         elif action == "reject":
-            order.status = OrderStatus.REJECTED
-            await callback_query.message.edit_text(f"Заказ бо ID {order_id} рад шуд.")
+            await session.delete(order)  # Удаление аз датабаза
+            await callback_query.message.edit_text(f"Заказ бо ID {order_id} рад шуд ва удалит карда шуд.")
+            # Ирсоли хабар ба клиент
+            await bot.send_message(
+                chat_id=order.user_id,
+                text=f"Мутаассифона, закази шумо рад карда шуд."
+            )
 
         await session.commit()
 

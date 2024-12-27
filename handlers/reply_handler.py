@@ -114,23 +114,31 @@ async def menu_handler(message: types.Message):
 async def send_order_to_admin(order, admin_id: int, message, session):
     """Ирсоли фармоиш ба администратор."""
     products_info = []
-    
+    total_price = 0  # Ҳисоби нархи умумӣ
+
     for item in order.cart.items:
         # Гирифтани номи маҳсулот аз датабейз
         product = await session.get(Product, item.product_id)  # Product - модели маҳсулот
         product_name = product.name if product else "Номи номаълум"
-        
+
+        # Ҳисоби нархи умумӣ
+        total_price += item.quantity * item.price
+
         # Илова кардани маълумот ба рӯйхат
         products_info.append(
             f"Маҳсулот: {product_name} ({item.product_type})\n"
-            f"Миқдор: {item.quantity}"
+            f"ID: {item.product_id}\n"
+            f"Миқдор: {item.quantity}\n"
+            f"Нархи ягона: {item.price} сомонӣ\n"
+            f"Нархи умумӣ: {item.quantity * item.price} сомонӣ"
         )
-    
+
     # Пайғом барои админ
     order_message = (
         f"Фармоиши нав аз {order.customer_name} ({order.phone_number}):\n"
         f"Нишонӣ: {order.address if order.address else 'Нишонӣ дастрас нест'}\n\n" +
-        "\n\n".join(products_info)
+        "\n\n".join(products_info) +
+        f"\n\n💵 Нархи умумии харид: {total_price} сомонӣ"
     )
 
     # Ирсоли паём ва координатаҳо ё нишонӣ

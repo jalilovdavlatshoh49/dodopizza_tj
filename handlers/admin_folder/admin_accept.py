@@ -74,13 +74,16 @@ async def show_pending_orders(message: types.Message):
 
 
 
-
-# Функсия барои фиристодани заказҳои саҳифаи интихобшуда
+# Функсия барои фиристодани заказҳои саҳифаи интихобшуда бо маълумотҳои маҳсулот
 async def send_orders_page(message, chat_id: int, page: int):
     async with SessionLocal() as session:  # Сессияи пойгоҳи додаҳо
         offset = (page - 1) * ORDERS_PER_PAGE
         result = await session.execute(
-            select(Order).where(Order.status == OrderStatus.PENDING).offset(offset).limit(ORDERS_PER_PAGE)
+            select(Order)
+            .where(Order.status == OrderStatus.PENDING)
+            .options(joinedload(Order.cart).joinedload(Cart.items))
+            .offset(offset)
+            .limit(ORDERS_PER_PAGE)
         )
         orders = result.scalars().all()
 
@@ -93,15 +96,34 @@ async def send_orders_page(message, chat_id: int, page: int):
         text = "📋 Заказҳои интизорӣ:\n\n"
         for order in orders:
             text += (
-                f"ID: {order.id}\n"
-                f"Муштарӣ: {order.customer_name}\n"
-                f"Телефон: {order.phone_number}\n"
-                f"Нишонӣ: {order.address}\n\n"
+                f"🆔 ID: {order.id}\n"
+                f"👤 Муштарӣ: {order.customer_name}\n"
+                f"📞 Телефон: {order.phone_number}\n"
+                f"📍 Нишонӣ: {order.address if order.address else 'Дастрас нест'}\n"
+                f"📦 Маҳсулотҳо:\n"
             )
+
+            # Намоиши маълумотҳои маҳсулот
+            if order.cart and order.cart.items:
+                for item in order.cart.items:
+                    product = await session.get(Product, item.product_id)  # Гирифтани маълумоти маҳсулот
+                    product_name = product.name if product else "Номи номаълум"
+                    product_type = item.product_type if item.product_type else "Номаълум"
+                    text += (
+                        f"  - Ном: {product_name}\n"
+                        f"    Тип: {product_type}\n"
+                        f"    ID: {item.product_id}\n"
+                        f"    Миқдор: {item.quantity}\n"
+                        f"    Нархи ягона: {item.price} сомонӣ\n"
+                        f"    Нархи умумӣ: {item.quantity * item.price} сомонӣ\n\n"
+                    )
+            else:
+                text += "  Маҳсулот вуҷуд надорад.\n\n"
+
             # Илова кардани тугмаҳо барои ҳар як заказ
             keyboard.inline_keyboard.append([
-                InlineKeyboardButton(text="Қабул кардан", callback_data=f"accept_{order.id}"),
-                InlineKeyboardButton(text="Рад кардан", callback_data=f"reject_{order.id}")
+                InlineKeyboardButton(text="✅ Қабул кардан", callback_data=f"accept_{order.id}"),
+                InlineKeyboardButton(text="❌ Рад кардан", callback_data=f"reject_{order.id}")
             ])
 
         # Тугмаҳои саҳифабандӣ

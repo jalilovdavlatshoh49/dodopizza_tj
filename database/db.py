@@ -67,6 +67,7 @@ class Cart(Base):
     order = relationship("Order", back_populates="cart", uselist=False)
 
     async def add_item(self, session, product_type: str, product_id: int):
+        quantity = 1
         result = await session.execute(
             select(CartItem).filter(
                 CartItem.cart_id == self.id,

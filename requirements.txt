@@ -4,3 +4,4 @@ aiomysql  # Агар MySQL истифода баред
 alembic  # Барои идоракунии мигратсияҳо
 python-dotenv  # Барои идоракунии файлҳои муҳит (environment)
 asyncmy
+greenlet

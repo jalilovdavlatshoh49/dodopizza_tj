@@ -43,6 +43,10 @@ async def buy_product(call: types.CallbackQuery):
             async with session.begin():
                 # Парсинг кардани маълумот
                 data = call.data.split("_")
+                if len(data) < 3:
+                    await call.answer("Маълумоти нодуруст!", show_alert=True)
+                    return
+                
                 category, product_id = data[1], int(data[2])
                 user_id = call.from_user.id
 
@@ -73,17 +77,15 @@ async def buy_product(call: types.CallbackQuery):
                 await cart.add_item(session, category, product_id)
 
                 # Навсозии клавиатура
-                # Навсозии клавиатура
                 result = await session.execute(
-    select(CartItem).where(
-        CartItem.cart_id == cart.id,
-        CartItem.product_type == category,
-        CartItem.product_id == product_id
-    )
-)
+                    select(CartItem).where(
+                        CartItem.cart_id == cart.id,
+                        CartItem.product_type == category,
+                        CartItem.product_id == product_id
+                    )
+                )
                 cart_item = result.scalars().first()
                 if cart_item:
-                    # Pass the session explicitly to get the correct price
                     keyboard = await get_keyboard(cart_item, user_id)  
                     await call.message.edit_reply_markup(reply_markup=keyboard)
                 else:

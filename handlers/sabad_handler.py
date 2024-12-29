@@ -81,7 +81,7 @@ async def buy_product(call: types.CallbackQuery):
             quantity = 1
             result = await session.execute(
             select(CartItem).filter(
-                CartItem.cart_id == self.id,
+                CartItem.cart_id == cart.id,
                 CartItem.product_type == product_type,
                 CartItem.product_id == product_id
             )

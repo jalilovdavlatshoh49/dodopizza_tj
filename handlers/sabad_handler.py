@@ -78,7 +78,21 @@ async def buy_product(call: types.CallbackQuery):
                 await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
                 return
 
-            await cart.add_item(session, category, product_id)
+            quantity = 1
+            result = await session.execute(
+            select(CartItem).filter(
+                CartItem.cart_id == self.id,
+                CartItem.product_type == product_type,
+                CartItem.product_id == product_id
+            )
+        )
+            existing_item = result.scalars().first()
+
+            if existing_item:
+                existing_item.quantity += quantity
+            else:
+            new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+            session.add(new_item)
 
             result = await session.execute(
                 select(CartItem).where(

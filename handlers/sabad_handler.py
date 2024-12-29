@@ -39,7 +39,6 @@ InlineKeyboardButton(text=f"Харид {price} сомонӣ", callback_data=f"bu
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
-        async with session.begin():  # Ҳамеша session.begin() истифода баред
             data = call.data.split("_")
             if len(data) < 3:
                 await call.answer("Маълумоти нодуруст!", show_alert=True)
@@ -53,7 +52,7 @@ async def buy_product(call: types.CallbackQuery):
             if not cart:
                 cart = Cart(user_id=user_id)
                 session.add(cart)
-                await session.flush()
+                await session.commit()
 
             product_model = globals().get(category.capitalize())
             if not product_model:

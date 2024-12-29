@@ -39,60 +39,55 @@ InlineKeyboardButton(text=f"Харид {price} сомонӣ", callback_data=f"bu
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
-        try:
-            async with session.begin():
-                # Парсинг кардани маълумот
-                data = call.data.split("_")
-                if len(data) < 3:
-                    await call.answer("Маълумоти нодуруст!", show_alert=True)
-                    return
-                
-                category, product_id = data[1], int(data[2])
-                user_id = call.from_user.id
+        # Парсинг кардани маълумот
+        data = call.data.split("_")
+        if len(data) < 3:
+            await call.answer("Маълумоти нодуруст!", show_alert=True)
+            return
 
-                # Ёфтани сабад ё эҷод кардани сабади нав
-                result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
-                cart = result.scalars().first()
-                if not cart:
-                    cart = Cart(user_id=user_id)
-                    session.add(cart)
-                    await session.flush()
+        category, product_id = data[1], int(data[2])
+        user_id = call.from_user.id
 
-                # Санҷиши дурустии категорияи маҳсулот
-                product_model = globals().get(category.capitalize())
-                if not product_model:
-                    await call.answer("Категория ёфт нашуд!", show_alert=True)
-                    return
+        # Ёфтани сабад ё эҷод кардани сабади нав
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            cart = Cart(user_id=user_id)
+            session.add(cart)
+            await session.flush()
 
-                # Ёфтани маҳсулот
-                result = await session.execute(
-                    select(product_model).filter(product_model.id == product_id)
-                )
-                product = result.scalars().first()
-                if not product:
-                    await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
-                    return
+        # Санҷиши дурустии категорияи маҳсулот
+        product_model = globals().get(category.capitalize())
+        if not product_model:
+            await call.answer("Категория ёфт нашуд!", show_alert=True)
+            return
 
-                # Иловаи маҳсулот ба сабад
-                await cart.add_item(session, category, product_id)
+        # Ёфтани маҳсулот
+        result = await session.execute(
+            select(product_model).filter(product_model.id == product_id)
+        )
+        product = result.scalars().first()
+        if not product:
+            await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+            return
 
-                # Навсозии клавиатура
-                result = await session.execute(
-                    select(CartItem).where(
-                        CartItem.cart_id == cart.id,
-                        CartItem.product_type == category,
-                        CartItem.product_id == product_id
-                    )
-                )
-                cart_item = result.scalars().first()
-                if cart_item:
-                    keyboard = await get_keyboard(cart_item, user_id)  
-                    await call.message.edit_reply_markup(reply_markup=keyboard)
-                else:
-                    await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
-        except Exception as e:
-            await call.answer("Хатогӣ рух дод!", show_alert=True)
-            print(f"Error in buy_product: {e}")
+        # Иловаи маҳсулот ба сабад
+        await cart.add_item(session, category, product_id)
+
+        # Навсозии клавиатура
+        result = await session.execute(
+            select(CartItem).where(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == category,
+                CartItem.product_id == product_id
+            )
+        )
+        cart_item = result.scalars().first()
+        if cart_item:
+            keyboard = await get_keyboard(cart_item, user_id)
+            await call.message.edit_reply_markup(reply_markup=keyboard)
+        else:
+            await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))

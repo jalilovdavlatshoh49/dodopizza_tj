@@ -13,27 +13,38 @@ sabad_router = Router()
 
 
 async def get_keyboard(cart_item: CartItem, user_id):
-    session = SessionLocal()
     """Сохтани клавиатураи динамикӣ барои маҳсулот."""
-    quantity = cart_item.quantity
-    price = await cart_item.get_price(session)  # Get the price using the async method
-    total_price = await calculate_total_price_pending_cart(user_id)  # Calculate total price
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[           [
-InlineKeyboardButton(text=f"Харид {price} сомонӣ", callback_data=f"buy_{cart_item.product_type}_{cart_item.product_id}")],
-
-        [
-            InlineKeyboardButton(text="-", callback_data=f"decrease_{cart_item.product_type}_{cart_item.product_id}"),
-            InlineKeyboardButton(text=f"{quantity} дона", callback_data="noop"),
-            InlineKeyboardButton(text="+", callback_data=f"increase_{cart_item.product_type}_{cart_item.product_id}")
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"Карзина ({total_price} сомонӣ)",
-                callback_data="view_cart"
-            )
-        ]
-    ])
-    return keyboard
+    async with SessionLocal() as session:
+        quantity = cart_item.quantity
+        price = await cart_item.get_price(session)  # Get the price using the async method
+        total_price = await calculate_total_price_pending_cart(user_id)  # Calculate total price
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"Харид {price} сомонӣ",
+                    callback_data=f"buy_{cart_item.product_type}_{cart_item.product_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="-",
+                    callback_data=f"decrease_{cart_item.product_type}_{cart_item.product_id}"
+                ),
+                InlineKeyboardButton(text=f"{quantity} дона", callback_data="noop"),
+                InlineKeyboardButton(
+                    text="+",
+                    callback_data=f"increase_{cart_item.product_type}_{cart_item.product_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=f"Карзина ({total_price} сомонӣ)",
+                    callback_data="view_cart"
+                )
+            ]
+        ])
+        return keyboard
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))

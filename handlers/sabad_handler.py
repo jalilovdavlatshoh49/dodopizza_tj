@@ -91,8 +91,8 @@ async def buy_product(call: types.CallbackQuery):
             if existing_item:
                 existing_item.quantity += quantity
             else:
-            new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
-            session.add(new_item)
+                new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+                session.add(new_item)
 
             result = await session.execute(
                 select(CartItem).where(

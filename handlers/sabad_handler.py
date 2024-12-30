@@ -62,11 +62,9 @@ PRODUCT_TABLES = {
 
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
-    async with SessionLocal() as session:
+        session = SessionLocal()
         data = call.data.split("_")
-        if len(data) < 3:
-            await call.answer("Маълумоти нодуруст!", show_alert=True)
-            return
+        
 
         category, product_id = data[1], int(data[2])
         user_id = call.from_user.id
@@ -77,6 +75,7 @@ async def buy_product(call: types.CallbackQuery):
             cart = Cart(user_id=user_id)
             session.add(cart)
             await session.commit()
+            await session.close()
 
         product_model = PRODUCT_TABLES.get(category.capitalize())
         if not product_model:
@@ -116,6 +115,8 @@ async def buy_product(call: types.CallbackQuery):
 
            
             await session.commit()
+            await session.close()
+        session = SessionLocal()
 
         result = await session.execute(
             select(CartItem).where(

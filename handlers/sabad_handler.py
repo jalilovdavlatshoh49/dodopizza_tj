@@ -104,7 +104,14 @@ async def buy_product(call: types.CallbackQuery):
         if existing_item:
             existing_item.quantity += quantity
         else:
-            new_item = CartItem(cart_id=cart.id, product_type=category, product_id=product_id, quantity=quantity)
+            result = await session.execute(select(CartItem).filter(
+                CartItem.cart_id == cart.id
+            )
+        )
+        existing_item = result.scalars().first()
+
+
+            new_item = existing_item(product_type=category, product_id=product_id, quantity=quantity)
             session.add(new_item)
             await session.commit()
 

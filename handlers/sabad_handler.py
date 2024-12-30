@@ -70,8 +70,7 @@ async def buy_product(call: types.CallbackQuery):
                 await call.answer("Категория ёфт нашуд!", show_alert=True)
                 return
 
-            result = await session.execute(
-                select(product_model).filter(product_model.id == product_id)
+            result = await session.execute(select(product_model).filter(product_model.id == product_id)
             )
             product = result.scalars().first()
             if not product:
@@ -91,8 +90,9 @@ async def buy_product(call: types.CallbackQuery):
             if existing_item:
                 existing_item.quantity += quantity
             else:
-                new_item = CartItem(cart_id=self.id, product_type=product_type, product_id=product_id, quantity=quantity)
+                new_item = CartItem(cart_id=cart.id, product_type=product_type, product_id=product_id, quantity=quantity)
                 session.add(new_item)
+                session.commit()
 
             result = await session.execute(
                 select(CartItem).where(

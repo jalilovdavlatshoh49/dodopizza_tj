@@ -108,7 +108,7 @@ async def buy_product(call: types.CallbackQuery):
                 CartItem.cart_id == cart.id
             )
         )
-        existing_item = result.scalars().first()
+            existing_item = result.scalars().first()
 
 
             new_item = existing_item(product_type=category, product_id=product_id, quantity=quantity)

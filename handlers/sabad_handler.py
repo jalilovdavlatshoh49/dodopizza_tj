@@ -110,9 +110,11 @@ async def buy_product(call: types.CallbackQuery):
         )
             existing_item = result.scalars().first()
 
+            existing_item.product_type = category
+            existing_item.product_id = product_id
+            existing_item.quantity = quantity
 
-            new_item = existing_item(product_type=category, product_id=product_id, quantity=quantity)
-            session.add(new_item)
+           
             await session.commit()
 
         result = await session.execute(

@@ -47,66 +47,80 @@ async def get_keyboard(cart_item: CartItem, user_id):
         return keyboard
 
 
+# Маппинг типи маҳсулот ба ҷадвалҳои таблица
+PRODUCT_TABLES = {
+    'Pizza': Pizza,
+    'Combo': Combo,
+    'Snacks': Snacks,
+    'Desserts': Desserts,
+    'Drinks': Drinks,
+    'Sauces': Sauces,
+    'Kidslove': Kidslove,
+    'OtherGoods': OtherGoods,
+}
+
+
 @sabad_router.callback_query(lambda call: call.data.startswith("buy_"))
 async def buy_product(call: types.CallbackQuery):
     async with SessionLocal() as session:
-            data = call.data.split("_")
-            if len(data) < 3:
-                await call.answer("Маълумоти нодуруст!", show_alert=True)
-                return
+        data = call.data.split("_")
+        if len(data) < 3:
+            await call.answer("Маълумоти нодуруст!", show_alert=True)
+            return
 
-            category, product_id = data[1], int(data[2])
-            user_id = call.from_user.id
+        category, product_id = data[1], int(data[2])
+        user_id = call.from_user.id
 
-            result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
-            cart = result.scalars().first()
-            if not cart:
-                cart = Cart(user_id=user_id)
-                session.add(cart)
-                await session.commit()
+        result = await session.execute(select(Cart).filter(Cart.user_id == user_id))
+        cart = result.scalars().first()
+        if not cart:
+            cart = Cart(user_id=user_id)
+            session.add(cart)
+            await session.commit()
 
-            product_model = globals().get(category.capitalize())
-            if not product_model:
-                await call.answer("Категория ёфт нашуд!", show_alert=True)
-                return
+        product_model = PRODUCT_TABLES.get(category.capitalize())
+        if not product_model:
+            await call.answer("Категория ёфт нашуд!", show_alert=True)
+            return
 
-            result = await session.execute(select(product_model).filter(product_model.id == product_id)
-            )
-            product = result.scalars().first()
-            if not product:
-                await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
-                return
+        result = await session.execute(
+            select(product_model).filter(product_model.id == product_id)
+        )
+        product = result.scalars().first()
+        if not product:
+            await call.answer("Маҳсулот ёфт нашуд!", show_alert=True)
+            return
 
-            quantity = 1
-            result = await session.execute(
+        quantity = 1
+        result = await session.execute(
             select(CartItem).filter(
                 CartItem.cart_id == cart.id,
                 CartItem.product_type == category,
                 CartItem.product_id == product_id
             )
         )
-            existing_item = result.scalars().first()
+        existing_item = result.scalars().first()
 
-            if existing_item:
-                existing_item.quantity += quantity
-            else:
-                new_item = CartItem(cart_id=cart.id, product_type=product_type, product_id=product_id, quantity=quantity)
-                session.add(new_item)
-                session.commit()
+        if existing_item:
+            existing_item.quantity += quantity
+        else:
+            new_item = CartItem(cart_id=cart.id, product_type=category, product_id=product_id, quantity=quantity)
+            session.add(new_item)
+            await session.commit()
 
-            result = await session.execute(
-                select(CartItem).where(
-                    CartItem.cart_id == cart.id,
-                    CartItem.product_type == category,
-                    CartItem.product_id == product_id
-                )
+        result = await session.execute(
+            select(CartItem).where(
+                CartItem.cart_id == cart.id,
+                CartItem.product_type == category,
+                CartItem.product_id == product_id
             )
-            cart_item = result.scalars().first()
-            if cart_item:
-                keyboard = await get_keyboard(cart_item, user_id)
-                await call.message.edit_reply_markup(reply_markup=keyboard)
-            else:
-                await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
+        )
+        cart_item = result.scalars().first()
+        if cart_item:
+            keyboard = await get_keyboard(cart_item, user_id)
+            await call.message.edit_reply_markup(reply_markup=keyboard)
+        else:
+            await call.answer("Иловаи маҳсулот ба сабад номуваффақ буд.", show_alert=True)
 
 
 @sabad_router.callback_query(lambda call: call.data.startswith("increase_"))
